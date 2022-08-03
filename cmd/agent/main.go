@@ -20,7 +20,7 @@ var (
 	data = &runtime.MemStats{}
 	metrics map[string]gauge
 	pollNum uint
-	baseUrl string = "http://localhost:8080/"
+	baseURL string = "http://localhost:8080/"
 	client         = &http.Client{
 		Timeout: 1 * time.Second,
 	}
@@ -74,7 +74,7 @@ func sendRequest(request *http.Request) {
 func sendMetrics() {
 	// Send metrics
 	for metricName, value := range metrics {
-		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", baseUrl, "gauge", metricName, value)
+		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", baseURL, "gauge", metricName, value)
 
 		request, err := http.NewRequest(http.MethodPost, endpoint, nil)
 		if err != nil {
@@ -85,7 +85,7 @@ func sendMetrics() {
 	}
 
 	// Send poll count
-	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", baseUrl, "counter", "pollNum", pollNum)
+	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", baseURL, "counter", "pollNum", pollNum)
 	request, err := http.NewRequest(http.MethodPost, endpoint, nil)
 	if err != nil {
 		fmt.Println("failed to build a request")
