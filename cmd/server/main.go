@@ -31,6 +31,12 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 	metricName := params[3]
 	valueString := params[4]
 	// _, metricType, metricName, valueString := splitPath(r.URL.Path, "/")
+	if metricType != "gauge" && metricType != "counter" {
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+		return
+	}
+
 	if metricType == "gauge" {
 		// value, err := strconv.ParseFloat("100", 64)
 		// fmt.Println(value)
