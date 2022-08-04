@@ -21,7 +21,7 @@ var (
 	data    = &runtime.MemStats{}
 	metrics map[string]gauge
 	pollNum uint
-	baseURL string = "http://localhost:8080/"
+	baseURL string = "http://localhost:8080"
 	client         = &http.Client{
 		Timeout: 1 * time.Second,
 	}
