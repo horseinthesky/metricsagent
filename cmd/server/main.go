@@ -1,6 +1,6 @@
 package main
 
-	"fmt"
+import (
 	"net/http"
 	"strconv"
 	"strings"
