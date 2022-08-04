@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -17,7 +18,7 @@ type counter int64
 type gauge float64
 
 var (
-	data = &runtime.MemStats{}
+	data    = &runtime.MemStats{}
 	metrics map[string]gauge
 	pollNum uint
 	baseURL string = "http://localhost:8080/"
@@ -67,7 +68,12 @@ func sendRequest(request *http.Request) {
 		fmt.Println(err)
 	} else {
 		fmt.Println("Code: ", response.Status)
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			fmt.Println(err)
+		}
 		defer response.Body.Close()
+		fmt.Println(string(body))
 	}
 }
 
