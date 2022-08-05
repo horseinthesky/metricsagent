@@ -1,14 +1,20 @@
 package handlers
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"text/template"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/horseinthesky/metricsagent/cmd/server/storage"
 )
 
-func MetricsHandler(w http.ResponseWriter, r *http.Request) {
+func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	// if r.URL.Path != "/update/" {
 	//         http.NotFound(w, r)
 	//         return
@@ -69,4 +75,51 @@ func MetricsHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
 	}
 
+}
+
+func LoadHandler(w http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "metricType")
+	metricName := chi.URLParam(r, "metricName")
+
+	if metricType != "gauge" && metricType != "counter" {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte(http.StatusText(http.StatusNotFound)))
+		return
+	}
+
+	if metricType == "gauge" {
+		if value, ok := storage.GaugeStorage[metricName]; ok {
+			w.Write([]byte(fmt.Sprint(value)))
+			return
+		}
+	}
+
+	if metricType == "counter" {
+		if value, ok := storage.CounterStorage[metricName]; ok {
+			w.Write([]byte(fmt.Sprint(value)))
+			return
+		}
+	}
+
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(http.StatusText(http.StatusNotFound)))
+}
+
+func AllMetricHandler(w http.ResponseWriter, r *http.Request) {
+	allMetrics := map[string]float64{}
+	for k, v := range storage.GaugeStorage {
+		allMetrics[k] = v
+	}
+	for k, v := range storage.CounterStorage {
+		allMetrics[k] = float64(v)
+	}
+
+	htmlPage, err := os.ReadFile("cmd/server/templates/dashboard.html") // TODO: Fix file path relation
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	w.Header().Set("Content-Type", "text/html")
+	tmpl := template.Must(template.New("").Parse(string(htmlPage)))
+	tmpl.Execute(w, allMetrics)
 }
