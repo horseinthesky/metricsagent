@@ -27,8 +27,8 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	valueString := chi.URLParam(r, "value")
 
 	if ok := unsupportedType(metricType); !ok {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(http.StatusText(http.StatusNotFound)))
+		w.WriteHeader(http.StatusNotImplemented)
+		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
 		return
 	}
 
