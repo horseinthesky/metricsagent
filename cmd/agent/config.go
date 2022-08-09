@@ -96,7 +96,7 @@ func sendPostRequest(url string) {
 
 	response, err := client.Do(request)
 	if err != nil {
-		fmt.Println(fmt.Errorf("Failed to make a request. Error: %w", err))
+		fmt.Println(fmt.Errorf("failed to make a request. error: %w", err))
 		return
 	}
 
