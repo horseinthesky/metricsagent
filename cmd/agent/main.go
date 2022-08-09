@@ -2,12 +2,12 @@ package main
 
 import (
 	"runtime"
-	"time"
 )
 
+// Seconds
 const (
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
+	pollInterval   = 2
+	reportInterval = 10
 )
 
 var (

@@ -29,10 +29,10 @@ type Agent struct {
 	count    int
 }
 
-func newAgent(poll, report time.Duration, url string) *Agent {
+func newAgent(poll, report int, url string) *Agent {
 	agent := &Agent{
-		poll:   time.NewTicker(poll),
-		report: time.NewTicker(report),
+		poll:   time.NewTicker(time.Duration(poll) * time.Second),
+		report: time.NewTicker(time.Duration(report) * time.Second),
 	}
 
 	if url == "" {
