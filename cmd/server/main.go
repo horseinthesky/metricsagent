@@ -10,6 +10,10 @@ import (
 	"github.com/horseinthesky/metricsagent/cmd/server/handlers"
 )
 
+const (
+	listenOn = ":8080"
+)
+
 func main() {
 	r := chi.NewRouter()
 
@@ -18,9 +22,13 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/update/{metricType}/{metricName}/{value}", handlers.SaveHandler)
-	r.Get("/value/{metricType}/{metricName}", handlers.LoadHandler)
+	r.Post("/update/{metricType}/{metricName}/{value}", handlers.SaveMetric)
+	r.Post("/update/*", handlers.Null)
+
+	r.Get("/value/{metricType}/{metricName}", handlers.LoadMetric)
+	r.Get("/value/*", handlers.Null)
+
 	r.Get("/", handlers.AllMetricHandler)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	log.Fatal(http.ListenAndServe(listenOn, r))
 }

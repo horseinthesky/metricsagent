@@ -21,7 +21,7 @@ func unsupportedType(mtype string) bool {
 	return true
 }
 
-func SaveHandler(w http.ResponseWriter, r *http.Request) {
+func SaveMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
@@ -61,7 +61,7 @@ func SaveHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Received a POST request\n"))
 }
 
-func LoadHandler(w http.ResponseWriter, r *http.Request) {
+func LoadMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 
@@ -85,6 +85,11 @@ func LoadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(http.StatusText(http.StatusNotFound)))
+}
+
+func Null(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
