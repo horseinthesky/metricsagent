@@ -22,13 +22,13 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/update/{metricType}/{metricName}/{value}", handlers.SaveMetric)
-	r.Post("/update/*", handlers.Null)
+	r.Post("/update/{metricType}/{metricName}/{value}", handlers.HandleSaveMetric)
+	r.Post("/update/*", handlers.HandleNotFound)
 
-	r.Get("/value/{metricType}/{metricName}", handlers.LoadMetric)
-	r.Get("/value/*", handlers.Null)
+	r.Get("/value/{metricType}/{metricName}", handlers.HandleLoadMetric)
+	r.Get("/value/*", handlers.HandleNotFound)
 
-	r.Get("/", handlers.AllMetricHandler)
+	r.Get("/", handlers.HandleDashboard)
 
 	log.Fatal(http.ListenAndServe(listenOn, r))
 }

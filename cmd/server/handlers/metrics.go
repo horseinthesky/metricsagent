@@ -11,6 +11,8 @@ import (
 	"github.com/horseinthesky/metricsagent/cmd/server/storage"
 )
 
+const dashboardTemplate = "cmd/server/templates/dashboard.html"
+
 var stash = &storage.Memory{}
 
 func unsupportedType(mtype string) bool {
@@ -21,7 +23,7 @@ func unsupportedType(mtype string) bool {
 	return false
 }
 
-func SaveMetric(w http.ResponseWriter, r *http.Request) {
+func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
@@ -42,7 +44,7 @@ func SaveMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Received a POST request\n"))
 }
 
-func LoadMetric(w http.ResponseWriter, r *http.Request) {
+func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
 	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 
@@ -62,15 +64,15 @@ func LoadMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(value))
 }
 
-func Null(w http.ResponseWriter, r *http.Request) {
+func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func AllMetricHandler(w http.ResponseWriter, r *http.Request) {
+func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	allMetrics := stash.GetAll()
 
-	htmlPage, err := os.ReadFile("cmd/server/templates/dashboard.html")
+	htmlPage, err := os.ReadFile(dashboardTemplate)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
