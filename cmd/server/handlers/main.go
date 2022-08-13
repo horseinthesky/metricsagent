@@ -13,7 +13,7 @@ import (
 
 const dashboardTemplate = "cmd/server/templates/dashboard.html"
 
-var stash = &storage.Memory{}
+var stash = storage.NewMemoryStorage()
 
 func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")

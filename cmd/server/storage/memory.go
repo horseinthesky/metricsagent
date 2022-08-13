@@ -6,9 +6,6 @@ import (
 	"sync"
 )
 
-// var GaugeStorage = map[string]float64{}
-// var CounterStorage = map[string]int64{}
-
 type Memory struct {
 	sync.Map
 }
@@ -19,7 +16,7 @@ func (m *Memory) Set(name, value string) error {
 		oldValue, loaded := m.Load(name)
 		if loaded {
 			oldCounter, _ := oldValue.(int64)
-			m.Store(name, counter + oldCounter)
+			m.Store(name, counter+oldCounter)
 			return nil
 
 		}
@@ -74,4 +71,8 @@ func (m *Memory) GetAll() map[string]float64 {
 	})
 
 	return res
+}
+
+func NewMemoryStorage() *Memory {
+	return &Memory{}
 }
