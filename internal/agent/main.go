@@ -20,8 +20,8 @@ type Agent struct {
 	Poll     *time.Ticker
 	Report   *time.Ticker
 	Count    int
-	upstream string
 	metrics  *sync.Map
+	upstream string
 	client   *http.Client
 }
 
@@ -33,8 +33,8 @@ func New(poll, report int, url string) *Agent {
 	agent := &Agent{
 		Poll:     time.NewTicker(time.Duration(poll) * time.Second),
 		Report:   time.NewTicker(time.Duration(report) * time.Second),
-		upstream: url,
 		metrics:  &sync.Map{},
+		upstream: url,
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
