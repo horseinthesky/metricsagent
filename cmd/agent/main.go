@@ -2,6 +2,8 @@ package main
 
 import (
 	"runtime"
+
+	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
 // Seconds
@@ -15,18 +17,18 @@ var (
 )
 
 func main() {
-	agent := newAgent(pollInterval, reportInterval, "")
+	agent := agent.New(pollInterval, reportInterval, "")
 
 	for {
 		select {
-		case <-agent.report.C:
-			agent.sendMetrics()
-		case <-agent.poll.C:
-			agent.count++
+		case <-agent.Report.C:
+			agent.SendMetrics()
+		case <-agent.Poll.C:
+			agent.Count++
 
 			runtime.ReadMemStats(data)
 
-			agent.updateMetrics()
+			agent.UpdateMetrics(data)
 		}
 	}
 }
