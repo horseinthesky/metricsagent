@@ -1,4 +1,4 @@
-package handlers
+package server
 
 import (
 	"html/template"
@@ -8,14 +8,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/horseinthesky/metricsagent/cmd/server/storage"
+	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
-const dashboardTemplate = "cmd/server/templates/dashboard.html"
+const dashboardTemplate = "internal/server/templates/dashboard.html"
 
 var stash = storage.NewMemoryStorage()
 
-func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
+func handleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
 
@@ -29,7 +29,7 @@ func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Received a POST request\n"))
 }
 
-func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
+func handleLoadMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 
 	value, err := stash.Get(metricName)
@@ -42,12 +42,12 @@ func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(value))
 }
 
-func HandleNotFound(w http.ResponseWriter, r *http.Request) {
+func handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func HandleDashboard(w http.ResponseWriter, r *http.Request) {
+func handleDashboard(w http.ResponseWriter, r *http.Request) {
 	allMetrics := stash.GetAll()
 
 	htmlPage, err := os.ReadFile(dashboardTemplate)
