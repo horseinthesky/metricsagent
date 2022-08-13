@@ -15,24 +15,9 @@ const dashboardTemplate = "cmd/server/templates/dashboard.html"
 
 var stash = &storage.Memory{}
 
-func unsupportedType(mtype string) bool {
-	if mtype != "gauge" && mtype != "counter" {
-		return true
-	}
-
-	return false
-}
-
 func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
-
-	if unsupportedType(metricType) {
-		w.WriteHeader(http.StatusNotImplemented)
-		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
-		return
-	}
 
 	err := stash.Set(metricName, valueString)
 	if err != nil {
@@ -45,14 +30,7 @@ func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
-	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
-
-	if unsupportedType(metricType) {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(http.StatusText(http.StatusNotFound)))
-		return
-	}
 
 	value, err := stash.Get(metricName)
 	if err != nil {

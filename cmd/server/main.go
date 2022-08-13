@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/horseinthesky/metricsagent/cmd/server/handlers"
+	cmiddleware "github.com/horseinthesky/metricsagent/cmd/server/middleware"
 )
 
 const (
@@ -22,11 +23,21 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/update/{metricType}/{metricName}/{value}", handlers.HandleSaveMetric)
-	r.Post("/update/*", handlers.HandleNotFound)
+	r.Route("/update", func(r chi.Router) {
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(cmiddleware.DropUnsupportedType)
+			r.Post("/{metricName}/{value}", handlers.HandleSaveMetric)
+		})
+		r.Post("/*", handlers.HandleNotFound)
+	})
 
-	r.Get("/value/{metricType}/{metricName}", handlers.HandleLoadMetric)
-	r.Get("/value/*", handlers.HandleNotFound)
+	r.Route("/value", func(r chi.Router) {
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(cmiddleware.DropUnsupportedType)
+			r.Get("/{metricName}", handlers.HandleLoadMetric)
+		})
+		r.Get("/*", handlers.HandleNotFound)
+	})
 
 	r.Get("/", handlers.HandleDashboard)
 
