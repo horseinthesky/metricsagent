@@ -21,9 +21,9 @@ func main() {
 
 	for {
 		select {
-		case <-agent.Report.C:
+		case <-agent.ReportTicker.C:
 			agent.SendMetrics()
-		case <-agent.Poll.C:
+		case <-agent.PollTicker.C:
 			agent.Count++
 
 			runtime.ReadMemStats(data)

@@ -17,12 +17,12 @@ const (
 type gauge float64
 
 type Agent struct {
-	Poll     *time.Ticker
-	Report   *time.Ticker
-	Count    int
-	metrics  *sync.Map
-	upstream string
-	client   *http.Client
+	PollTicker   *time.Ticker
+	ReportTicker *time.Ticker
+	Count        int
+	metrics      *sync.Map
+	upstream     string
+	client       *http.Client
 }
 
 func New(poll, report int, url string) *Agent {
@@ -31,10 +31,10 @@ func New(poll, report int, url string) *Agent {
 	}
 
 	agent := &Agent{
-		Poll:     time.NewTicker(time.Duration(poll) * time.Second),
-		Report:   time.NewTicker(time.Duration(report) * time.Second),
-		metrics:  &sync.Map{},
-		upstream: url,
+		PollTicker:   time.NewTicker(time.Duration(poll) * time.Second),
+		ReportTicker: time.NewTicker(time.Duration(report) * time.Second),
+		metrics:      &sync.Map{},
+		upstream:     url,
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
@@ -78,23 +78,23 @@ func (a *Agent) SendMetrics() {
 	// Send metrics
 	a.metrics.Range(func(metricName, value interface{}) bool {
 		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
-		sendPostRequest(a.client, endpoint)
+		a.sendPostRequest(endpoint)
 		return true
 	})
 
 	// Send poll count
 	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "pollNum", a.Count)
-	sendPostRequest(a.client, endpoint)
+	a.sendPostRequest(endpoint)
 }
 
-func sendPostRequest(client *http.Client, url string) {
+func (a *Agent) sendPostRequest(url string) {
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		fmt.Println("failed to build a request")
 	}
 	request.Header.Add("Content-Type", "text/plain")
 
-	response, err := client.Do(request)
+	response, err := a.client.Do(request)
 	if err != nil {
 		fmt.Println(fmt.Errorf("failed to make a request. error: %w", err))
 		return

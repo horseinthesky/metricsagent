@@ -10,6 +10,10 @@ type Memory struct {
 	sync.Map
 }
 
+func NewMemoryStorage() *Memory {
+	return &Memory{}
+}
+
 func (m *Memory) Set(name, value string) error {
 	counter, err := strconv.ParseInt(value, 10, 64)
 	if err == nil {
@@ -71,8 +75,4 @@ func (m *Memory) GetAll() map[string]float64 {
 	})
 
 	return res
-}
-
-func NewMemoryStorage() *Memory {
-	return &Memory{}
 }
