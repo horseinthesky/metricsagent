@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/horseinthesky/metricsagent/internal/server/handlers"
 )
 
 const (
@@ -23,21 +25,23 @@ func New() *Server {
 
 	r.Route("/update", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
-			r.Use(dropUnsupportedType)
-			r.Post("/{metricName}/{value}", handleSaveMetric)
+			r.Use(dropUnsupportedTextType)
+			r.Post("/{metricName}/{value}", handlers.HandleSaveMetric)
 		})
-		r.Post("/*", handleNotFound)
+		r.Post("/", handlers.HandleSaveJSONMetric)
+		r.Post("/*", handlers.HandleNotFound)
 	})
 
 	r.Route("/value", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
-			r.Use(dropUnsupportedType)
-			r.Get("/{metricName}", handleLoadMetric)
+			r.Use(dropUnsupportedTextType)
+			r.Get("/{metricName}", handlers.HandleLoadMetric)
 		})
-		r.Get("/*", handleNotFound)
+		r.Post("/", handlers.HandleLoadJSONMetric)
+		r.Get("/*", handlers.HandleNotFound)
 	})
 
-	r.Get("/", handleDashboard)
+	r.Get("/", handlers.HandleDashboard)
 
 	return &Server{r}
 }

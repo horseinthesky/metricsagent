@@ -1,6 +1,7 @@
-package server
+package handlers
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -15,7 +16,7 @@ const dashboardTemplate = "internal/server/templates/dashboard.html"
 
 var stash storage.Storage = storage.NewMemoryStorage()
 
-func handleSaveMetric(w http.ResponseWriter, r *http.Request) {
+func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
 
@@ -29,7 +30,7 @@ func handleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Received a POST request\n"))
 }
 
-func handleLoadMetric(w http.ResponseWriter, r *http.Request) {
+func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 
 	value, err := stash.Get(metricName)
@@ -39,15 +40,15 @@ func handleLoadMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte(value))
+	w.Write([]byte(fmt.Sprint(value)))
 }
 
-func handleNotFound(w http.ResponseWriter, r *http.Request) {
+func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func handleDashboard(w http.ResponseWriter, r *http.Request) {
+func HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	allMetrics := stash.GetAll()
 
 	htmlPage, err := os.ReadFile(dashboardTemplate)

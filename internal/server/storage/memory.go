@@ -38,7 +38,7 @@ func (m *Memory) Set(name, value string) error {
 	return fmt.Errorf("failed to store")
 }
 
-func (m *Memory) Get(name string) (string, error) {
+func (m *Memory) Get(name string) (any, error) {
 	value, loaded := m.Load(name)
 	if !loaded {
 		return "", fmt.Errorf("no value found")
@@ -46,12 +46,12 @@ func (m *Memory) Get(name string) (string, error) {
 
 	counter, ok := value.(int64)
 	if ok {
-		return fmt.Sprint(counter), nil
+		return counter, nil
 	}
 
 	gauge, ok := value.(float64)
 	if ok {
-		return fmt.Sprint(gauge), nil
+		return gauge, nil
 	}
 
 	return "", fmt.Errorf("unknown type")
