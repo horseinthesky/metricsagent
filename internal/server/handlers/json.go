@@ -43,22 +43,20 @@ func HandleSaveJSONMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	if storage.UnsupportedType(metric.MType) {
-		w.WriteHeader(http.StatusNotImplemented)
-		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+		http.Error(w, "Unknown type", http.StatusNotImplemented)
 		return
 	}
 
 	var value string
 	if metric.MType == storage.Counter.String() {
 		value = fmt.Sprint(*metric.Delta)
-	} else if metric.MType == storage.Gauge.String() {
+	} else {
 		value = fmt.Sprint(*metric.Value)
 	}
 
 	err = stash.Set(metric.ID, value)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		http.Error(w, "Invalid value", http.StatusBadRequest)
 		return
 	}
 
@@ -75,15 +73,13 @@ func HandleLoadJSONMetric(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "application/json")
 
 	if storage.UnsupportedType(metricRequest.MType) {
-		w.WriteHeader(http.StatusNotImplemented)
-		w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
+		http.Error(w, "Unknown type", http.StatusNotImplemented)
 		return
 	}
 
 	value, err := stash.Get(metricRequest.ID)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(http.StatusText(http.StatusNotFound)))
+		http.Error(w, "Unknown name", http.StatusNotFound)
 		return
 	}
 

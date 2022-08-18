@@ -2,21 +2,12 @@ package handlers
 
 import (
 	"fmt"
-	"html/template"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
-
-	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
-const dashboardTemplate = "internal/server/templates/dashboard.html"
-
-var stash storage.Storage = storage.NewMemoryStorage()
-
-func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
+func HandleSaveTextMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
 
@@ -30,7 +21,7 @@ func HandleSaveMetric(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Received a POST request\n"))
 }
 
-func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
+func HandleLoadTextMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 
 	value, err := stash.Get(metricName)
@@ -41,24 +32,4 @@ func HandleLoadMetric(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte(fmt.Sprint(value)))
-}
-
-func HandleNotFound(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(http.StatusText(http.StatusNotFound)))
-}
-
-func HandleDashboard(w http.ResponseWriter, r *http.Request) {
-	allMetrics := stash.GetAll()
-
-	htmlPage, err := os.ReadFile(dashboardTemplate)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
-
-	w.Header().Set("Content-Type", "text/html")
-
-	tmpl := template.Must(template.New("").Parse(string(htmlPage)))
-	tmpl.Execute(w, allMetrics)
 }

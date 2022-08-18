@@ -12,10 +12,6 @@ import (
 	"time"
 )
 
-const (
-	baseURL string = "http://localhost:8080"
-)
-
 type gauge float64
 
 type Agent struct {
@@ -35,10 +31,6 @@ type Metric struct {
 }
 
 func New(poll, report int, url string) *Agent {
-	if url == "" {
-		url = baseURL
-	}
-
 	agent := &Agent{
 		PollTicker:   time.NewTicker(time.Duration(poll) * time.Second),
 		ReportTicker: time.NewTicker(time.Duration(report) * time.Second),
@@ -98,10 +90,7 @@ func (a *Agent) SendMetrics() {
 	// Send metrics
 	a.metrics.Range(func(metricName, value interface{}) bool {
 		m, _ := metricName.(string)
-		v, ok := value.(gauge)
-		if !ok {
-			fmt.Println(m)
-		}
+		v, _ := value.(gauge)
 
 		a.sendPostJSON(
 			&Metric{

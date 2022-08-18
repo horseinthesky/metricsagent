@@ -7,12 +7,11 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/handlers"
 )
 
-const (
-	listenOn = ":8080"
-)
-
 type Server struct {
 	*chi.Mux
+}
+
+func init() {
 }
 
 func New() *Server {
@@ -26,7 +25,7 @@ func New() *Server {
 	r.Route("/update", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Post("/{metricName}/{value}", handlers.HandleSaveMetric)
+			r.Post("/{metricName}/{value}", handlers.HandleSaveTextMetric)
 		})
 		r.Post("/", handlers.HandleSaveJSONMetric)
 		r.Post("/*", handlers.HandleNotFound)
@@ -35,7 +34,7 @@ func New() *Server {
 	r.Route("/value", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Get("/{metricName}", handlers.HandleLoadMetric)
+			r.Get("/{metricName}", handlers.HandleLoadTextMetric)
 		})
 		r.Post("/", handlers.HandleLoadJSONMetric)
 		r.Get("/*", handlers.HandleNotFound)

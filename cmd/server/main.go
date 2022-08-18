@@ -3,15 +3,27 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/horseinthesky/metricsagent/internal/server"
 )
 
 const (
-	listenOn = ":8080"
+	listenOn = "localhost:8080"
 )
+
+var (
+	address string
+)
+
+func init() {
+	address = os.Getenv("ADDRESS")
+	if address == "" {
+		address = listenOn
+	}
+}
 
 func main() {
 	metricsServer := server.New()
-	log.Fatal(http.ListenAndServe(listenOn, metricsServer))
+	log.Fatal(http.ListenAndServe(address, metricsServer))
 }
