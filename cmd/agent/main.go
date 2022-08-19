@@ -9,17 +9,10 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
-// Seconds
-const (
-	baseURL               = "http://localhost:8080"
-	defaultPollInterval   = 2
-	defaultReportInterval = 10
-)
-
 type Config struct {
-	Address        string `env:"ADDRESS"`
-	PollInterval   int    `env:"POLL_INTERVAL"`
-	ReportInterval int    `env:"REPORT_INTERVAL"`
+	Address        string `env:"ADDRESS" envDefault:"localhost:8080"`
+	PollInterval   int    `env:"POLL_INTERVAL" envDefault:"2"`
+	ReportInterval int    `env:"REPORT_INTERVAL" envDefault:"10"`
 }
 
 var (
@@ -31,18 +24,6 @@ func init() {
 	err := env.Parse(&cfg)
 	if err != nil {
 		log.Fatal(err)
-	}
-
-	if cfg.Address == "" {
-		cfg.Address = baseURL
-	}
-
-	if cfg.PollInterval == 0 {
-		cfg.PollInterval = defaultPollInterval
-	}
-
-	if cfg.ReportInterval == 0 {
-		cfg.ReportInterval = defaultReportInterval
 	}
 }
 

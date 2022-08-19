@@ -35,7 +35,7 @@ func New(poll, report int, url string) *Agent {
 		PollTicker:   time.NewTicker(time.Duration(poll) * time.Second),
 		ReportTicker: time.NewTicker(time.Duration(report) * time.Second),
 		metrics:      &sync.Map{},
-		upstream:     url,
+		upstream:     fmt.Sprintf("http://%s", url),
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
