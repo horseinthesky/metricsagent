@@ -62,7 +62,7 @@ func HandleLoadJSONMetric(w http.ResponseWriter, r *http.Request) {
 
 	metric, err := stash.Get(metricRequest.ID)
 	if err != nil {
-		http.Error(w, "Unknown name", http.StatusNotFound)
+		http.Error(w, "Unknown metric id", http.StatusNotFound)
 		return
 	}
 
