@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -115,23 +116,25 @@ func (a *Agent) SendMetrics() {
 func (a *Agent) sendPostPlain(url string) {
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		fmt.Println("failed to build a request")
+		log.Println(fmt.Errorf("failed to build a request: %w", err))
+		return
 	}
 	request.Header.Add("Content-Type", "text/plain")
 
 	response, err := a.client.Do(request)
 	if err != nil {
-		fmt.Println(fmt.Errorf("failed to make a request. error: %w", err))
+		fmt.Println(fmt.Errorf("failed to make a request: %w", err))
 		return
 	}
 
-	fmt.Println("Code: ", response.Status)
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("failed to read response body: %w", err))
+		return
 	}
 	defer response.Body.Close()
-	fmt.Println(string(body))
+
+	log.Printf("Code: %v: %s", response.Status, string(body))
 }
 
 func (a *Agent) sendPostJSON(metric *Metric) {
@@ -141,21 +144,23 @@ func (a *Agent) sendPostJSON(metric *Metric) {
 	endpoint := fmt.Sprintf("%s/update/", a.upstream)
 	request, err := http.NewRequest(http.MethodPost, endpoint, payloadBuf)
 	if err != nil {
-		fmt.Println("failed to build a request")
+		log.Println(fmt.Errorf("failed to build a request: %w", err))
+		return
 	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, err := a.client.Do(request)
 	if err != nil {
-		fmt.Println(fmt.Errorf("failed to make a request. error: %w", err))
+		log.Println(fmt.Errorf("failed to make a request: %w", err))
 		return
 	}
 
-	fmt.Println("Code: ", response.Status)
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("failed to read respons: %w", err))
+		return
 	}
 	defer response.Body.Close()
-	fmt.Println(string(body))
+
+	log.Printf("Code: %v: %s", response.Status, string(body))
 }

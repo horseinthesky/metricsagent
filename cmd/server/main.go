@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -25,5 +26,5 @@ func init() {
 
 func main() {
 	metricsServer := server.New()
-	log.Fatal(http.ListenAndServe(address, metricsServer))
+	log.Fatal(fmt.Errorf("server crashed due to %w", http.ListenAndServe(address, metricsServer)))
 }

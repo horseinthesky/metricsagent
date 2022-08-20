@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 
@@ -23,7 +24,7 @@ var (
 func init() {
 	err := env.Parse(&cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
 }
 

@@ -60,7 +60,7 @@ func HandleSaveJSONMetric(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("Received a POST request\n"))
+	w.Write([]byte("Success: metric stored\n"))
 }
 
 func HandleLoadJSONMetric(w http.ResponseWriter, r *http.Request) {
