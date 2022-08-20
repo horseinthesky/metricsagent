@@ -73,7 +73,7 @@ func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
 	a.metrics.Store("StackSys", gauge(data.StackSys))
 	a.metrics.Store("Sys", gauge(data.Sys))
 	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
-	a.metrics.Store("Rand", gauge(rand.Float64()))
+	a.metrics.Store("RandomValue", gauge(rand.Float64()))
 }
 
 func (a *Agent) SendMetrics() {
@@ -85,7 +85,7 @@ func (a *Agent) SendMetrics() {
 	// })
 
 	// // Send poll count
-	// endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "pollNum", a.Count)
+	// endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.Count)
 	// a.sendPostPlain(endpoint)
 
 	// Send metrics
@@ -106,7 +106,7 @@ func (a *Agent) SendMetrics() {
 	// Send poll count
 	a.sendPostJSON(
 		&Metric{
-			ID:    "pollNum",
+			ID:    "PollCount",
 			MType: "counter",
 			Delta: &a.Count,
 		},
@@ -155,12 +155,5 @@ func (a *Agent) sendPostJSON(metric *Metric) {
 		return
 	}
 
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Println(fmt.Errorf("failed to read respons: %w", err))
-		return
-	}
-	defer response.Body.Close()
-
-	log.Printf("Code: %v: %s", response.Status, string(body))
+	log.Printf("Code: %v", response.Status)
 }
