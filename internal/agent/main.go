@@ -154,6 +154,7 @@ func (a *Agent) sendPostJSON(metric *Metric) {
 		log.Println(fmt.Errorf("failed to make a request: %w", err))
 		return
 	}
+	defer response.Body.Close()
 
 	log.Printf("Code: %v", response.Status)
 }
