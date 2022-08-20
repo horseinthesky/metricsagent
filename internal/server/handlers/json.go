@@ -44,8 +44,6 @@ func HandleSaveJSONMetric(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid value", http.StatusBadRequest)
 		return
 	}
-
-	w.Write([]byte("Success: metric stored\n"))
 }
 
 func HandleLoadJSONMetric(w http.ResponseWriter, r *http.Request) {
