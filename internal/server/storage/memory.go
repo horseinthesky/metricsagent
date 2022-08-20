@@ -52,10 +52,10 @@ func (m *Memory) GetAll() map[string]Metric {
 	m.Lock()
 	defer m.Unlock()
 
-	newDb := map[string]Metric{}
+	newDB := map[string]Metric{}
 	for k, v := range m.db {
-		newDb[k] = v
+		newDB[k] = v
 	}
 
-	return newDb
+	return newDB
 }
