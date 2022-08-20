@@ -33,7 +33,7 @@ func (m *Memory) Set(metric *Metric) error {
 		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to save metric")
 }
 
 func (m *Memory) Get(name string) (Metric, error) {

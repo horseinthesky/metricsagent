@@ -27,7 +27,7 @@ func HandleSaveTextMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		metric = &storage.Metric{
 			ID:    metricName,
-			MType: metricName,
+			MType: metricType,
 			Delta: &value,
 		}
 	case storage.Gauge.String():
@@ -39,7 +39,7 @@ func HandleSaveTextMetric(w http.ResponseWriter, r *http.Request) {
 		}
 		metric = &storage.Metric{
 			ID:    metricName,
-			MType: metricName,
+			MType: metricType,
 			Value: &value,
 		}
 	}
@@ -56,12 +56,21 @@ func HandleSaveTextMetric(w http.ResponseWriter, r *http.Request) {
 func HandleLoadTextMetric(w http.ResponseWriter, r *http.Request) {
 	metricName := chi.URLParam(r, "metricName")
 
-	value, err := stash.Get(metricName)
+	metric, err := stash.Get(metricName)
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte(http.StatusText(http.StatusNotFound)))
 		return
 	}
 
-	w.Write([]byte(fmt.Sprint(value)))
+	var value string
+
+	switch metric.MType {
+	case storage.Counter.String():
+		value = fmt.Sprint(*metric.Delta)
+	case storage.Gauge.String():
+		value = fmt.Sprint(*metric.Value)
+	}
+
+	w.Write([]byte(value))
 }
