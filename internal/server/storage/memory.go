@@ -2,77 +2,60 @@ package storage
 
 import (
 	"fmt"
-	"strconv"
 	"sync"
 )
 
 type Memory struct {
-	sync.Map
+	sync.Mutex
+	db map[string]Metric
 }
 
 func NewMemoryStorage() *Memory {
-	return &Memory{}
+	return &Memory{db: map[string]Metric{}}
 }
 
-func (m *Memory) Set(name, value string) error {
-	counter, err := strconv.ParseInt(value, 10, 64)
-	if err == nil {
-		oldValue, loaded := m.Load(name)
-		if loaded {
-			oldCounter, _ := oldValue.(int64)
-			m.Store(name, counter+oldCounter)
+func (m *Memory) Set(metric *Metric) error {
+	m.Lock()
+	defer m.Unlock()
+
+	switch metric.MType {
+	case Counter.String():
+		oldMetric, ok := m.db[metric.ID]
+		if ok {
+			*oldMetric.Delta += *metric.Delta
 			return nil
 
 		}
-
-		m.Store(name, counter)
+		m.db[metric.ID] = *metric
+		return nil
+	case Gauge.String():
+		m.db[metric.ID] = *metric
 		return nil
 	}
 
-	gauge, err := strconv.ParseFloat(value, 64)
-	if err == nil {
-		m.Store(name, gauge)
-		return nil
-	}
-
-	return fmt.Errorf("failed to store")
+	return nil
 }
 
-func (m *Memory) Get(name string) (any, error) {
-	value, loaded := m.Load(name)
-	if !loaded {
-		return "", fmt.Errorf("no value found")
+func (m *Memory) Get(name string) (Metric, error) {
+	metric, ok := m.db[name]
+	if !ok {
+		return Metric{}, fmt.Errorf("no value found")
 	}
 
-	counter, ok := value.(int64)
-	if ok {
-		return counter, nil
-	}
-
-	gauge, ok := value.(float64)
-	if ok {
-		return gauge, nil
-	}
-
-	return "", fmt.Errorf("unknown type")
+	return metric, nil
 }
 
 func (m *Memory) GetAll() map[string]float64 {
 	res := map[string]float64{}
-	m.Range(func(key, value interface{}) bool {
-		gauge, ok := value.(float64)
-		if ok {
-			res[key.(string)] = gauge
-			return true
-		}
 
-		counter, ok := value.(int64)
-		if ok {
-			res[key.(string)] = float64(counter)
+	for name, metric := range m.db {
+		switch metric.MType {
+		case Counter.String():
+			res[name] = float64(*metric.Delta)
+		case Gauge.String():
+			res[name] = *metric.Value
 		}
-
-		return true
-	})
+	}
 
 	return res
 }

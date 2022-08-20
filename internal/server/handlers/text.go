@@ -3,18 +3,50 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
 func HandleSaveTextMetric(w http.ResponseWriter, r *http.Request) {
+	metricType := chi.URLParam(r, "metricType")
 	metricName := chi.URLParam(r, "metricName")
 	valueString := chi.URLParam(r, "value")
 
-	err := stash.Set(metricName, valueString)
+	var metric *storage.Metric
+
+	switch metricType {
+	case storage.Counter.String():
+		value, err := strconv.ParseInt(valueString, 10, 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+		metric = &storage.Metric{
+			ID:    metricName,
+			MType: metricName,
+			Delta: &value,
+		}
+	case storage.Gauge.String():
+		value, err := strconv.ParseFloat(string(valueString), 64)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+		metric = &storage.Metric{
+			ID:    metricName,
+			MType: metricName,
+			Value: &value,
+		}
+	}
+
+	err := stash.Set(metric)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+		http.Error(w, "failed to save metric", http.StatusInternalServerError)
 		return
 	}
 

@@ -14,9 +14,16 @@ func (mt MetricType) String() string {
 	}[mt]
 }
 
+type Metric struct {
+	ID    string   `json:"id"`              // имя метрики
+	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
+
 type Storage interface {
-	Set(name, value string) error
-	Get(name string) (any, error)
+	Set(metric *Metric) error
+	Get(name string) (Metric, error)
 	GetAll() map[string]float64
 }
 
