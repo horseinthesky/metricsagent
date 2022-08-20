@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -68,6 +69,7 @@ func New(config Config) *Server {
 }
 
 func (s *Server) Start() {
+	ctx, cancel := context.WithCancel(context.Background())
 	// Restore metrics from backup
 	if s.config.Restore {
 		s.restore()
@@ -75,18 +77,22 @@ func (s *Server) Start() {
 
 	// Backup metrics periodically
 	if s.config.StoreFile != "" && s.config.StoreInterval > 0 {
-		go s.startPeriodicMetricsDump()
+		go s.startPeriodicMetricsDump(ctx)
 	}
 
-	log.Fatal(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
+	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
+	cancel()
 }
 
-func (s *Server) startPeriodicMetricsDump() {
+func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
 	for {
 		select {
 		case <-ticker.C:
 			s.dump()
+		case <-ctx.Done():
+			log.Println("metrics backup canceled")
+			return
 		}
 	}
 }
