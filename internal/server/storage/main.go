@@ -24,7 +24,7 @@ type Metric struct {
 type Storage interface {
 	Set(metric *Metric) error
 	Get(name string) (Metric, error)
-	GetAll() map[string]float64
+	GetAll() map[string]Metric
 }
 
 func UnsupportedType(mtype string) bool {

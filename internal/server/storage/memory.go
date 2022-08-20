@@ -37,6 +37,9 @@ func (m *Memory) Set(metric *Metric) error {
 }
 
 func (m *Memory) Get(name string) (Metric, error) {
+	m.Lock()
+	defer m.Unlock()
+
 	metric, ok := m.db[name]
 	if !ok {
 		return Metric{}, fmt.Errorf("no value found")
@@ -45,17 +48,14 @@ func (m *Memory) Get(name string) (Metric, error) {
 	return metric, nil
 }
 
-func (m *Memory) GetAll() map[string]float64 {
-	res := map[string]float64{}
+func (m *Memory) GetAll() map[string]Metric {
+	m.Lock()
+	defer m.Unlock()
 
-	for name, metric := range m.db {
-		switch metric.MType {
-		case Counter.String():
-			res[name] = float64(*metric.Delta)
-		case Gauge.String():
-			res[name] = *metric.Value
-		}
+	newDb := map[string]Metric{}
+	for k, v := range m.db {
+		newDb[k] = v
 	}
 
-	return res
+	return newDb
 }

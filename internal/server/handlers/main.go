@@ -18,17 +18,28 @@ func HandleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func HandleDashboard(w http.ResponseWriter, r *http.Request) {
-	allMetrics := stash.GetAll()
+func HandleDashboard(db storage.Storage) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		floatedMetrics := map[string]float64{}
 
-	htmlPage, err := os.ReadFile(dashboardTemplate)
-	if err != nil {
-		log.Println(err)
-		os.Exit(1)
-	}
+		for name, metric := range db.GetAll() {
+			switch metric.MType {
+			case storage.Counter.String():
+				floatedMetrics[name] = float64(*metric.Delta)
+			case storage.Gauge.String():
+				floatedMetrics[name] = *metric.Value
+			}
+		}
 
-	w.Header().Set("Content-Type", "text/html")
+		htmlPage, err := os.ReadFile(dashboardTemplate)
+		if err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
 
-	tmpl := template.Must(template.New("").Parse(string(htmlPage)))
-	tmpl.Execute(w, allMetrics)
+		w.Header().Set("Content-Type", "text/html")
+
+		tmpl := template.Must(template.New("").Parse(string(htmlPage)))
+		tmpl.Execute(w, floatedMetrics)
+	})
 }
