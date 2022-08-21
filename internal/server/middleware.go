@@ -13,20 +13,21 @@ import (
 
 func logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Got request. Headers are:")
-		for header, values := range r.Header {
-			log.Println(header, values)
-
-		}
-
+		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Println("Body: failed to read", )
 			r.Body.Close()
 			next.ServeHTTP(w, r)
 		}
+		defer r.Body.Close()
 
-		log.Println("Body:", string(bodyBytes))
+		log.Print("Body:", string(bodyBytes))
+		log.Print("Headers:")
+		for header, values := range r.Header {
+			log.Print(header, values)
+
+		}
 
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 
