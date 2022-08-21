@@ -70,6 +70,7 @@ func New(config Config) *Server {
 
 func (s *Server) Start() {
 	ctx, cancel := context.WithCancel(context.Background())
+
 	// Restore metrics from backup
 	if s.config.Restore {
 		s.restore()
