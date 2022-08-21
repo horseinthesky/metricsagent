@@ -27,9 +27,32 @@ func extractMetic(r *http.Request) (*storage.Metric, error) {
 
 func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		metric := &storage.Metric{}
+		err := json.NewDecoder(r.Body).Decode(metric)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+
+		if storage.UnsupportedType(metric.MType) {
+			http.Error(w, "Unknown type", http.StatusNotImplemented)
+			return
+		}
+
+		err = db.Set(metric)
+		if err != nil {
+			http.Error(w, "Invalid value", http.StatusBadRequest)
+			return
+		}
+	})
+}
+func HandleSaveJSONMetric2(db storage.Storage) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metric, err := extractMetic(r)
 		if err != nil {
-			http.Error(w, "failed to unmarshal payload", http.StatusInternalServerError)
+			http.Error(w, "bad or no payload", http.StatusBadRequest)
 			return
 		}
 
