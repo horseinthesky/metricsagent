@@ -47,7 +47,7 @@ func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 			return
 		}
 
-		w.Write([]byte(`"{"result": "metric saved"}`))
+		w.Write([]byte(`{"result": "metric saved"}`))
 	})
 }
 func HandleSaveJSONMetric2(db storage.Storage) http.HandlerFunc {
