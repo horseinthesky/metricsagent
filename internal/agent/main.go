@@ -76,19 +76,7 @@ func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
 	a.metrics.Store("RandomValue", gauge(rand.Float64()))
 }
 
-func (a *Agent) SendMetrics() {
-	// // Send metrics
-	// a.metrics.Range(func(metricName, value interface{}) bool {
-	// 	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
-	// 	a.sendPostPlain(endpoint)
-	// 	return true
-	// })
-
-	// // Send poll count
-	// endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.Count)
-	// a.sendPostPlain(endpoint)
-
-	// Send metrics
+func (a *Agent) SendMetricsJSON() {
 	a.metrics.Range(func(metricName, value interface{}) bool {
 		m, _ := metricName.(string)
 		v, _ := value.(gauge)
@@ -111,6 +99,19 @@ func (a *Agent) SendMetrics() {
 			Delta: &a.Count,
 		},
 	)
+}
+
+func (a *Agent) SendMetricsPlain() {
+	// Send metrics
+	a.metrics.Range(func(metricName, value interface{}) bool {
+		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
+		a.sendPostPlain(endpoint)
+		return true
+	})
+
+	// Send poll count
+	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.Count)
+	a.sendPostPlain(endpoint)
 }
 
 func (a *Agent) sendPostPlain(url string) {

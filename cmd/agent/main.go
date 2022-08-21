@@ -34,7 +34,7 @@ func main() {
 	for {
 		select {
 		case <-agent.ReportTicker.C:
-			agent.SendMetrics()
+			agent.SendMetricsJSON()
 		case <-agent.PollTicker.C:
 			agent.Count++
 

@@ -27,23 +27,24 @@ func extractMetic(r *http.Request) (*storage.Metric, error) {
 
 func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+
 		metric := &storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(metric)
 		if err != nil {
 			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
 			return
 		}
-
-		w.Header().Add("Content-Type", "application/json")
+		// defer r.Body.Close()
 
 		if storage.UnsupportedType(metric.MType) {
-			http.Error(w, "Unknown type", http.StatusNotImplemented)
+			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
 			return
 		}
 
 		err = db.Set(metric)
 		if err != nil {
-			http.Error(w, "Invalid value", http.StatusBadRequest)
+			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusBadRequest)
 			return
 		}
 	})
@@ -73,28 +74,30 @@ func HandleSaveJSONMetric2(db storage.Storage) http.HandlerFunc {
 
 func HandleLoadJSONMetric(db storage.Storage) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+
 		metricRequest, err := extractMetic(r)
 		if err != nil {
-			http.Error(w, "failed to unmarshal payload", http.StatusInternalServerError)
+			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
 			return
 		}
 
-		w.Header().Add("Content-Type", "application/json")
 
 		if storage.UnsupportedType(metricRequest.MType) {
-			http.Error(w, "Unknown type", http.StatusNotImplemented)
+			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
 			return
 		}
 
 		metric, err := db.Get(metricRequest.ID)
 		if err != nil {
-			http.Error(w, "Unknown metric id", http.StatusNotFound)
+			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
 			return
 		}
 
 		res, err := json.Marshal(metric)
 		if err != nil {
-			http.Error(w, "Internal error during JSON marshal", http.StatusInternalServerError)
+			http.Error(w, `{"error": "faied to marshal metric"}`, http.StatusInternalServerError)
+			return
 		}
 
 		w.Write([]byte(res))
