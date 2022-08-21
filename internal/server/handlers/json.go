@@ -30,7 +30,7 @@ func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 		metric := &storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(metric)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
 			return
 		}
 
