@@ -35,7 +35,6 @@ func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
 			return
 		}
-		// defer r.Body.Close()
 
 		if storage.UnsupportedType(metric.MType) {
 			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
@@ -47,6 +46,8 @@ func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusBadRequest)
 			return
 		}
+
+		w.Write([]byte(`"{"result": "metric saved"}`))
 	})
 }
 func HandleSaveJSONMetric2(db storage.Storage) http.HandlerFunc {
