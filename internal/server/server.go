@@ -39,6 +39,7 @@ func New(config Config) *Server {
 	server := &Server{r, config, memoryDB}
 
 	// Middleware
+	r.Use(logRequest)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)

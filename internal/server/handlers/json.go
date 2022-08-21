@@ -29,7 +29,6 @@ func extractMetic(r *http.Request) (*storage.Metric, error) {
 func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metric, err := extractMetic(r)
-		log.Printf("Gor metric: %+v", metric)
 		if err != nil {
 			http.Error(w, "failed to unmarshal payload", http.StatusInternalServerError)
 			return
@@ -47,7 +46,6 @@ func HandleSaveJSONMetric(db storage.Storage) http.HandlerFunc {
 			http.Error(w, "Invalid value", http.StatusBadRequest)
 			return
 		}
-		log.Printf("saved metric: %+v", metric)
 	})
 }
 
