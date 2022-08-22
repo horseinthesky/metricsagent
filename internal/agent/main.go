@@ -31,10 +31,10 @@ type Metric struct {
 	Value *gauge `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func New(poll, report int, url string) *Agent {
+func New(poll, report time.Duration, url string) *Agent {
 	agent := &Agent{
-		PollTicker:   time.NewTicker(time.Duration(poll) * time.Second),
-		ReportTicker: time.NewTicker(time.Duration(report) * time.Second),
+		PollTicker:   time.NewTicker(poll),
+		ReportTicker: time.NewTicker(report),
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", url),
 		client: &http.Client{

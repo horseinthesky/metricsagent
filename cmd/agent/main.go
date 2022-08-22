@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"time"
 
 	"github.com/caarlos0/env/v6"
 
@@ -11,9 +12,9 @@ import (
 )
 
 type Config struct {
-	Address        string `env:"ADDRESS" envDefault:"localhost:8080"`
-	PollInterval   int    `env:"POLL_INTERVAL" envDefault:"2"`
-	ReportInterval int    `env:"REPORT_INTERVAL" envDefault:"10"`
+	Address        string        `env:"ADDRESS" envDefault:"localhost:8080"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL" envDefault:"2s"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL" envDefault:"10s"`
 }
 
 var (
