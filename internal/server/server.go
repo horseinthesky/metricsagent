@@ -11,7 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/horseinthesky/metricsagent/internal/server/handlers"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -37,36 +36,39 @@ func New(config Config) *Server {
 
 	// Server
 	server := &Server{r, config, memoryDB}
-
-	// Middleware
-	r.Use(logRequest)
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	// Handlers
-	r.Route("/update", func(r chi.Router) {
-		r.Route("/{metricType}", func(r chi.Router) {
-			r.Use(dropUnsupportedTextType)
-			r.Post("/{metricName}/{value}", handlers.HandleSaveTextMetric(server.storage))
-		})
-		r.Post("/", handlers.HandleSaveJSONMetric(server.storage))
-		r.Post("/*", handlers.HandleNotFound)
-	})
-
-	r.Route("/value", func(r chi.Router) {
-		r.Route("/{metricType}", func(r chi.Router) {
-			r.Use(dropUnsupportedTextType)
-			r.Get("/{metricName}", handlers.HandleLoadTextMetric(server.storage))
-		})
-		r.Post("/", handlers.HandleLoadJSONMetric(server.storage))
-		r.Get("/*", handlers.HandleNotFound)
-	})
-
-	r.Get("/", handlers.HandleDashboard(server.storage))
+	server.setupRouter()
 
 	return server
+}
+
+func (s *Server) setupRouter() {
+	// Middleware
+	s.Use(logRequest)
+	s.Use(middleware.RequestID)
+	s.Use(middleware.RealIP)
+	s.Use(middleware.Logger)
+	s.Use(middleware.Recoverer)
+
+	// Handlers
+	s.Route("/update", func(r chi.Router) {
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(dropUnsupportedTextType)
+			r.Post("/{metricName}/{value}", s.HandleSaveTextMetric())
+		})
+		r.Post("/", s.HandleSaveJSONMetric())
+		r.Post("/*", s.HandleNotFound)
+	})
+
+	s.Route("/value", func(r chi.Router) {
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(dropUnsupportedTextType)
+			r.Get("/{metricName}", s.HandleLoadTextMetric())
+		})
+		r.Post("/", s.HandleLoadJSONMetric())
+		r.Get("/*", s.HandleNotFound)
+	})
+
+	s.Get("/", s.HandleDashboard())
 }
 
 func (s *Server) Start() {
@@ -78,7 +80,7 @@ func (s *Server) Start() {
 	}
 
 	// Backup metrics periodically
-	if s.config.StoreFile != "" && s.config.StoreInterval > 0 {
+	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0) * time.Second {
 		go s.startPeriodicMetricsDump(ctx)
 	}
 
