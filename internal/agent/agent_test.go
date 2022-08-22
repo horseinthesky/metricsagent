@@ -3,6 +3,7 @@ package agent
 import (
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,7 +15,12 @@ var (
 func TestUpdateMetrics(t *testing.T) {
 	runtime.ReadMemStats(data)
 
-	agent := New(2, 10, "")
+	agent := New(&Config{
+		Address:        "localhost:8080",
+		PollInterval:   time.Duration(2 * time.Second),
+		ReportInterval: time.Duration(10 * time.Second),
+	})
+
 	agent.UpdateMetrics(data)
 
 	storageMetric, loaded := agent.metrics.Load("Alloc")
