@@ -89,7 +89,7 @@ func (s *Server) Start() {
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(s.config.StoreInterval) * time.Second)
+	ticker := time.NewTicker(s.config.StoreInterval)
 	for {
 		select {
 		case <-ticker.C:
