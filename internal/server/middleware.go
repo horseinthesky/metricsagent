@@ -14,6 +14,7 @@ import (
 func logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
+
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Println("Body: failed to read", )
