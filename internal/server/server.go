@@ -23,11 +23,11 @@ type Config struct {
 
 type Server struct {
 	*chi.Mux
-	config  Config
+	config  *Config
 	storage storage.Storage
 }
 
-func New(config Config) *Server {
+func New(config *Config) *Server {
 	// Router
 	r := chi.NewRouter()
 
