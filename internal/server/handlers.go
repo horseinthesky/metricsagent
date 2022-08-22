@@ -132,7 +132,7 @@ func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		err = s.storage.Set(metric)
+		err = s.saveMetric(metric)
 		if err != nil {
 			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusBadRequest)
 			return

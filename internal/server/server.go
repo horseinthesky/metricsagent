@@ -80,7 +80,7 @@ func (s *Server) Start() {
 	}
 
 	// Backup metrics periodically
-	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0) * time.Second {
+	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
 		go s.startPeriodicMetricsDump(ctx)
 	}
 
@@ -143,4 +143,14 @@ func (s *Server) restore() {
 	}
 
 	log.Printf("successfully restored all metrics from %s", s.config.StoreFile)
+}
+
+func (s *Server) saveMetric(metric *storage.Metric) error {
+	err := s.storage.Set(metric)
+
+	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+		s.dump()
+	}
+
+	return err
 }
