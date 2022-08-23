@@ -44,6 +44,7 @@ func New(config *Config) *Server {
 func (s *Server) setupRouter() {
 	// Middleware
 	s.Use(logRequest)
+	s.Use(handleGzip)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
 	s.Use(middleware.Logger)
