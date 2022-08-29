@@ -12,7 +12,10 @@ import (
 )
 
 const (
-	listenOn = "localhost:8080"
+	defaultListenOn      = "localhost:8080"
+	defaultRestoreFlag   = true
+	defaultStoreInterval = time.Duration(300 * time.Second)
+	defaultStoreFile     = "/tmp/devops-metrics-db.json"
 )
 
 var (
@@ -24,32 +27,31 @@ var (
 )
 
 func overrideConfig(cfg *server.Config) {
-	if _, present := os.LookupEnv("ADDRESS"); !present {
+	if _, ok := os.LookupEnv("ADDRESS"); !ok {
 		cfg.Address = *address
 	}
-	if _, present := os.LookupEnv("STORE_INTERVAL"); !present {
+	if _, ok := os.LookupEnv("STORE_INTERVAL"); !ok {
 		cfg.StoreInterval = *storeInterval
 	}
-	if _, present := os.LookupEnv("STORE_FILE"); !present {
+	if _, ok := os.LookupEnv("STORE_FILE"); !ok {
 		cfg.StoreFile = *storeFile
 	}
-	if _, present := os.LookupEnv("RESTORE"); !present {
+	if _, ok := os.LookupEnv("RESTORE"); !ok {
 		cfg.Restore = *restore
 	}
 }
 
 func init() {
 	// Parse env vars
-	err := env.Parse(cfg)
-	if err != nil {
+	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
 
 	// Parse flags
-	address = flag.String("a", "localhost:8080", "Socket to listen on")
-	restore = flag.Bool("r", true, "If should restore metrics on startup")
-	storeInterval = flag.Duration("i", time.Duration(300*time.Second), "backup interval (seconds)")
-	storeFile = flag.String("f", "/tmp/devops-metrics-db.json", "Metrics backup file path")
+	address = flag.String("a", defaultListenOn, "Socket to listen on")
+	restore = flag.Bool("r", defaultRestoreFlag, "If should restore metrics on startup")
+	storeInterval = flag.Duration("i", defaultStoreInterval, "backup interval (seconds)")
+	storeFile = flag.String("f", defaultStoreFile, "Metrics backup file path")
 	flag.Parse()
 
 	overrideConfig(cfg)

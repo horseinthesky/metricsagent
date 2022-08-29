@@ -24,7 +24,7 @@ type Config struct {
 type Agent struct {
 	PollTicker   *time.Ticker
 	ReportTicker *time.Ticker
-	Count        int64
+	PollCounter  int64
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
@@ -100,7 +100,7 @@ func (a *Agent) SendMetricsJSON() {
 		&Metric{
 			ID:    "PollCount",
 			MType: "counter",
-			Delta: &a.Count,
+			Delta: &a.PollCounter,
 		},
 	)
 }
@@ -114,7 +114,7 @@ func (a *Agent) SendMetricsPlain() {
 	})
 
 	// Send poll count
-	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.Count)
+	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.PollCounter)
 	a.sendPostPlain(endpoint)
 }
 

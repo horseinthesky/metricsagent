@@ -13,7 +13,7 @@ type producer struct {
 }
 
 func NewProducer(filename string, flags int) (*producer, error) {
-	file, err := os.OpenFile(filename, flags, 0777)
+	file, err := os.OpenFile(filename, flags, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ type consumer struct {
 }
 
 func NewConsumer(filename string, flags int) (*consumer, error) {
-	file, err := os.OpenFile(filename, flags, 0777)
+	file, err := os.OpenFile(filename, flags, 0644)
 	if err != nil {
 		return nil, err
 	}

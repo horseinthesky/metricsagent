@@ -13,6 +13,12 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
+const (
+	defaultAddress        = "localhost:8080"
+	defaultReportInterval = time.Duration(10 * time.Second)
+	defaultPollInterval   = time.Duration(2 * time.Second)
+)
+
 var (
 	address        *string
 	reportInterval *time.Duration
@@ -22,26 +28,25 @@ var (
 )
 
 func overrideConfig(cfg *agent.Config) {
-	if _, present := os.LookupEnv("ADDRESS"); !present {
+	if _, ok := os.LookupEnv("ADDRESS"); !ok {
 		cfg.Address = *address
 	}
-	if _, present := os.LookupEnv("REPORT_INTERVAL"); !present {
+	if _, ok := os.LookupEnv("REPORT_INTERVAL"); !ok {
 		cfg.ReportInterval = *reportInterval
 	}
-	if _, present := os.LookupEnv("POLL_INTERVAL"); !present {
+	if _, ok := os.LookupEnv("POLL_INTERVAL"); !ok {
 		cfg.PollInterval = *pollInterval
 	}
 }
 
 func init() {
-	err := env.Parse(cfg)
-	if err != nil {
+	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
 
-	address = flag.String("a", "localhost:8080", "Address for sending data to")
-	reportInterval = flag.Duration("r", time.Duration(10*time.Second), "Metric report to server interval")
-	pollInterval = flag.Duration("p", time.Duration(2*time.Second), "Metric poll interval")
+	address = flag.String("a", defaultAddress, "Address for sending data to")
+	reportInterval = flag.Duration("r", defaultReportInterval, "Metric report to server interval")
+	pollInterval = flag.Duration("p", defaultPollInterval, "Metric poll interval")
 	flag.Parse()
 
 	overrideConfig(cfg)
