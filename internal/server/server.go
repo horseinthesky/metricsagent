@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -23,8 +22,9 @@ type Config struct {
 
 type Server struct {
 	*chi.Mux
-	config  *Config
-	storage storage.Storage
+	config   *Config
+	storage  storage.Storage
+	backuper *Backuper
 }
 
 func New(config *Config) *Server {
@@ -34,8 +34,11 @@ func New(config *Config) *Server {
 	// Srorage
 	memoryDB := storage.NewMemoryStorage()
 
+	// Backuper
+	backuper := NewBackuper(config.StoreFile)
+
 	// Server
-	server := &Server{r, config, memoryDB}
+	server := &Server{r, config, memoryDB, backuper}
 	server.setupRouter()
 
 	return server
@@ -72,8 +75,9 @@ func (s *Server) setupRouter() {
 	s.Get("/", s.HandleDashboard())
 }
 
-func (s *Server) Start() {
-	ctx, cancel := context.WithCancel(context.Background())
+func (s *Server) Start(rootCtx context.Context) {
+	ctx, cancel := context.WithCancel(rootCtx)
+	defer cancel()
 
 	// Restore metrics from backup
 	if s.config.Restore {
@@ -86,11 +90,13 @@ func (s *Server) Start() {
 	}
 
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
-	cancel()
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
+	log.Println("pediodic metrics backup started")
+
 	ticker := time.NewTicker(s.config.StoreInterval)
+
 	for {
 		select {
 		case <-ticker.C:
@@ -100,50 +106,6 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 			return
 		}
 	}
-}
-
-func (s *Server) dump() {
-	var metrics []storage.Metric
-
-	producer, err := NewProducer(s.config.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC)
-	if err != nil {
-		log.Println(fmt.Errorf("failed to create file producer %s: %w", s.config.StoreFile, err))
-		return
-	}
-
-	for _, metric := range s.storage.GetAll() {
-		metrics = append(metrics, metric)
-	}
-
-	if err := producer.WriteMetrics(&metrics); err != nil {
-		log.Println(fmt.Errorf("failed to dump metrics to %s: %w", s.config.StoreFile, err))
-		return
-	}
-
-	log.Printf("successfully dumped all metrics to %s", s.config.StoreFile)
-}
-
-func (s *Server) restore() {
-	consumer, err := NewConsumer(s.config.StoreFile, os.O_RDONLY|os.O_CREATE)
-	if err != nil {
-		log.Println(fmt.Errorf("failed to create file consumer %s: %w", s.config.StoreFile, err))
-		return
-	}
-
-	metrics, err := consumer.ReadMetrics()
-	if err != nil {
-		log.Println(fmt.Errorf("failed to restore metrics from %s: %w", s.config.StoreFile, err))
-		return
-	}
-
-	for _, metric := range metrics {
-		err := s.storage.Set(&metric)
-		if err != nil {
-			log.Println(fmt.Errorf("failed to restore metric %s: %w", metric.ID, err))
-		}
-	}
-
-	log.Printf("successfully restored all metrics from %s", s.config.StoreFile)
 }
 
 func (s *Server) saveMetric(metric *storage.Metric) error {

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -58,6 +61,19 @@ func init() {
 }
 
 func main() {
+	// Start server
 	metricsServer := server.New(cfg)
-	metricsServer.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go metricsServer.Start(ctx)
+
+	// Handle graceful shutdown
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	sig := <-term
+	log.Printf("signal received: %v; terminating...\n", sig)
+
+	cancel()
+	time.Sleep(200 *time.Millisecond)
 }
