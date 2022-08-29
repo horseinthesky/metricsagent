@@ -60,7 +60,7 @@ func main() {
 		case <-agent.ReportTicker.C:
 			agent.SendMetricsJSON()
 		case <-agent.PollTicker.C:
-			agent.Count++
+			agent.PollCounter++
 
 			runtime.ReadMemStats(data)
 
