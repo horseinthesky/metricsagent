@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -46,6 +47,23 @@ func New(cfg *Config) *Agent {
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
+	}
+}
+
+func (a Agent) Run(ctx context.Context) {
+	data := &runtime.MemStats{}
+
+	for {
+		select {
+		case <-a.ReportTicker.C:
+			a.SendMetricsJSON()
+		case <-a.PollTicker.C:
+			a.PollCounter++
+
+			runtime.ReadMemStats(data)
+
+			a.UpdateMetrics(data)
+		}
 	}
 }
 

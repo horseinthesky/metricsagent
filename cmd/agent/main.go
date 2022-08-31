@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"os"
-	"runtime"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -24,7 +26,6 @@ var (
 	reportInterval *time.Duration
 	pollInterval   *time.Duration
 	cfg            = &agent.Config{}
-	data           = &runtime.MemStats{}
 )
 
 func overrideConfig(cfg *agent.Config) {
@@ -55,16 +56,15 @@ func init() {
 func main() {
 	agent := agent.New(cfg)
 
-	for {
-		select {
-		case <-agent.ReportTicker.C:
-			agent.SendMetricsJSON()
-		case <-agent.PollTicker.C:
-			agent.PollCounter++
+	ctx, cancel := context.WithCancel(context.Background())
+	go agent.Run(ctx)
 
-			runtime.ReadMemStats(data)
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-			agent.UpdateMetrics(data)
-		}
-	}
+	sig := <-term
+	log.Printf("signal received: %v; terminating...\n", sig)
+
+	cancel()
+	time.Sleep(200 *time.Millisecond)
 }

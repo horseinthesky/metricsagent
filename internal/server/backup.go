@@ -19,7 +19,7 @@ func NewBackuper(filename string) *Backuper {
 	}
 }
 
-func (b Backuper) WriteMetrics(metrics *[]storage.Metric) error {
+func (b Backuper) WriteMetrics(metrics []storage.Metric) error {
 	file, err := os.OpenFile(b.filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
@@ -56,7 +56,7 @@ func (s *Server) dump() {
 		metrics = append(metrics, metric)
 	}
 
-	if err := s.backuper.WriteMetrics(&metrics); err != nil {
+	if err := s.backuper.WriteMetrics(metrics); err != nil {
 		log.Println(fmt.Errorf("failed to dump metrics to %s: %w", s.config.StoreFile, err))
 		return
 	}

@@ -17,7 +17,7 @@ import (
 const (
 	defaultListenOn      = "localhost:8080"
 	defaultRestoreFlag   = true
-	defaultStoreInterval = time.Duration(300 * time.Second)
+	defaultStoreInterval = 300 * time.Second
 	defaultStoreFile     = "/tmp/devops-metrics-db.json"
 )
 
