@@ -21,39 +21,23 @@ const (
 	defaultPollInterval   = time.Duration(2 * time.Second)
 )
 
-var (
-	address        *string
-	reportInterval *time.Duration
-	pollInterval   *time.Duration
-	cfg            = &agent.Config{}
-)
+func getConfig() *agent.Config {
+	cfg := &agent.Config{}
 
-func overrideConfig(cfg *agent.Config) {
-	if _, ok := os.LookupEnv("ADDRESS"); !ok {
-		cfg.Address = *address
-	}
-	if _, ok := os.LookupEnv("REPORT_INTERVAL"); !ok {
-		cfg.ReportInterval = *reportInterval
-	}
-	if _, ok := os.LookupEnv("POLL_INTERVAL"); !ok {
-		cfg.PollInterval = *pollInterval
-	}
-}
+	flag.StringVar(&cfg.Address, "a", defaultAddress, "Address for sending data to")
+	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
+	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
+	flag.Parse()
 
-func init() {
 	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
 
-	address = flag.String("a", defaultAddress, "Address for sending data to")
-	reportInterval = flag.Duration("r", defaultReportInterval, "Metric report to server interval")
-	pollInterval = flag.Duration("p", defaultPollInterval, "Metric poll interval")
-	flag.Parse()
-
-	overrideConfig(cfg)
+	return cfg
 }
 
 func main() {
+	cfg := getConfig()
 	agent := agent.New(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -66,5 +50,5 @@ func main() {
 	log.Printf("signal received: %v; terminating...\n", sig)
 
 	cancel()
-	time.Sleep(200 *time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 }
