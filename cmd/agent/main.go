@@ -17,8 +17,8 @@ import (
 
 const (
 	defaultAddress        = "localhost:8080"
-	defaultReportInterval = time.Duration(10 * time.Second)
-	defaultPollInterval   = time.Duration(2 * time.Second)
+	defaultReportInterval = 10 * time.Second
+	defaultPollInterval   = 2 * time.Second
 )
 
 func getConfig() *agent.Config {
@@ -28,10 +28,12 @@ func getConfig() *agent.Config {
 	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
 	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
 	flag.Parse()
+	fmt.Printf("%+v", cfg)
 
 	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
+	fmt.Printf("%+v", cfg)
 
 	return cfg
 }
