@@ -44,24 +44,25 @@ func overrideConfig(cfg *server.Config) {
 	}
 }
 
-func init() {
-	// Parse env vars
+func getConfig() *server.Config {
+	cfg := &server.Config{}
+
+	flag.StringVar(&cfg.Address, "a", defaultListenOn, "Socket to listen on")
+	flag.BoolVar(&cfg.Restore, "r", defaultRestoreFlag, "If should restore metrics on startup")
+	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
+	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
+	flag.Parse()
+
 	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
 
-	// Parse flags
-	address = flag.String("a", defaultListenOn, "Socket to listen on")
-	restore = flag.Bool("r", defaultRestoreFlag, "If should restore metrics on startup")
-	storeInterval = flag.Duration("i", defaultStoreInterval, "backup interval (seconds)")
-	storeFile = flag.String("f", defaultStoreFile, "Metrics backup file path")
-	flag.Parse()
-
-	overrideConfig(cfg)
+	return cfg
 }
 
 func main() {
 	// Start server
+	cfg := getConfig()
 	metricsServer := server.New(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())

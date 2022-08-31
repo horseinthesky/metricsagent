@@ -28,23 +28,23 @@ func getConfig() *agent.Config {
 	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
 	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
 	flag.Parse()
-	fmt.Printf("%+v", cfg)
 
 	if err := env.Parse(cfg); err != nil {
 		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
 	}
-	fmt.Printf("%+v", cfg)
 
 	return cfg
 }
 
 func main() {
+	// Start agent
 	cfg := getConfig()
 	agent := agent.New(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go agent.Run(ctx)
 
+	// Handle graceful shutdown
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
