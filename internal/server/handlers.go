@@ -35,14 +35,22 @@ func (s *Server) HandleDashboard() http.HandlerFunc {
 
 		htmlPage, err := os.ReadFile(dashboardTemplate)
 		if err != nil {
-			log.Println(err)
-			os.Exit(1)
+			log.Printf("failed to read dashboard template file: %s", err)
+			return
 		}
 
 		w.Header().Set("Content-Type", "text/html")
 
-		tmpl := template.Must(template.New("").Parse(string(htmlPage)))
-		tmpl.Execute(w, floatedMetrics)
+		tmpl, err := template.New("").Parse(string(htmlPage))
+		if err != nil {
+			log.Printf("failed to parse a template: %s", err)
+			return
+		}
+
+		err = tmpl.Execute(w, floatedMetrics)
+		if err != nil {
+			log.Printf("failed to render a template: %s", err)
+		}
 	})
 }
 
