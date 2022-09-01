@@ -1,34 +1,56 @@
 package main
 
 import (
-	"runtime"
+	"context"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/caarlos0/env/v6"
 
 	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
-// Seconds
 const (
-	pollInterval   = 2
-	reportInterval = 10
+	defaultAddress        = "localhost:8080"
+	defaultReportInterval = 10 * time.Second
+	defaultPollInterval   = 2 * time.Second
 )
 
-var (
-	data = &runtime.MemStats{}
-)
+func getConfig() *agent.Config {
+	cfg := &agent.Config{}
+
+	flag.StringVar(&cfg.Address, "a", defaultAddress, "Address for sending data to")
+	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
+	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
+	flag.Parse()
+
+	if err := env.Parse(cfg); err != nil {
+		log.Fatal(fmt.Errorf("failed to parse env vars: %w", err))
+	}
+
+	return cfg
+}
 
 func main() {
-	agent := agent.New(pollInterval, reportInterval, "")
+	// Start agent
+	cfg := getConfig()
+	agent := agent.New(cfg)
 
-	for {
-		select {
-		case <-agent.ReportTicker.C:
-			agent.SendMetrics()
-		case <-agent.PollTicker.C:
-			agent.Count++
+	ctx, cancel := context.WithCancel(context.Background())
+	go agent.Run(ctx)
 
-			runtime.ReadMemStats(data)
+	// Handle graceful shutdown
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-			agent.UpdateMetrics(data)
-		}
-	}
+	sig := <-term
+	log.Printf("signal received: %v; terminating...\n", sig)
+
+	cancel()
+	time.Sleep(200 * time.Millisecond)
 }

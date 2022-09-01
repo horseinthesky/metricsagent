@@ -1,8 +1,12 @@
 package agent
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -10,37 +14,57 @@ import (
 	"time"
 )
 
-const (
-	baseURL string = "http://localhost:8080"
-)
-
 type gauge float64
+
+type Config struct {
+	Address        string        `env:"ADDRESS"`
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
+}
 
 type Agent struct {
 	PollTicker   *time.Ticker
 	ReportTicker *time.Ticker
-	Count        int
+	PollCounter  int64
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
 }
 
-func New(poll, report int, url string) *Agent {
-	if url == "" {
-		url = baseURL
-	}
+type Metric struct {
+	ID    string `json:"id"`              // имя метрики
+	MType string `json:"type"`            // параметр, принимающий значение gauge или counter
+	Delta *int64 `json:"delta,omitempty"` // значение метрики в случае передачи counter
+	Value *gauge `json:"value,omitempty"` // значение метрики в случае передачи gauge
+}
 
-	agent := &Agent{
-		PollTicker:   time.NewTicker(time.Duration(poll) * time.Second),
-		ReportTicker: time.NewTicker(time.Duration(report) * time.Second),
+func New(cfg *Config) *Agent {
+	return &Agent{
+		PollTicker:   time.NewTicker(cfg.PollInterval),
+		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		metrics:      &sync.Map{},
-		upstream:     url,
+		upstream:     fmt.Sprintf("http://%s", cfg.Address),
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
 	}
+}
 
-	return agent
+func (a Agent) Run(ctx context.Context) {
+	data := &runtime.MemStats{}
+
+	for {
+		select {
+		case <-a.ReportTicker.C:
+			a.SendMetricsJSON()
+		case <-a.PollTicker.C:
+			a.PollCounter++
+
+			runtime.ReadMemStats(data)
+
+			a.UpdateMetrics(data)
+		}
+	}
 }
 
 func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
@@ -71,40 +95,89 @@ func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
 	a.metrics.Store("StackSys", gauge(data.StackSys))
 	a.metrics.Store("Sys", gauge(data.Sys))
 	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
-	a.metrics.Store("Rand", gauge(rand.Float64()))
+	a.metrics.Store("RandomValue", gauge(rand.Float64()))
 }
 
-func (a *Agent) SendMetrics() {
-	// Send metrics
+func (a *Agent) SendMetricsJSON() {
 	a.metrics.Range(func(metricName, value interface{}) bool {
-		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
-		a.sendPostRequest(endpoint)
+		m, _ := metricName.(string)
+		v, _ := value.(gauge)
+
+		a.sendPostJSON(
+			&Metric{
+				ID:    m,
+				MType: "gauge",
+				Value: &v,
+			},
+		)
 		return true
 	})
 
 	// Send poll count
-	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "pollNum", a.Count)
-	a.sendPostRequest(endpoint)
+	a.sendPostJSON(
+		&Metric{
+			ID:    "PollCount",
+			MType: "counter",
+			Delta: &a.PollCounter,
+		},
+	)
 }
 
-func (a *Agent) sendPostRequest(url string) {
+func (a *Agent) SendMetricsPlain() {
+	// Send metrics
+	a.metrics.Range(func(metricName, value interface{}) bool {
+		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
+		a.sendPostPlain(endpoint)
+		return true
+	})
+
+	// Send poll count
+	endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "counter", "PollCount", a.PollCounter)
+	a.sendPostPlain(endpoint)
+}
+
+func (a *Agent) sendPostPlain(url string) {
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		fmt.Println("failed to build a request")
+		log.Println(fmt.Errorf("failed to build a request: %w", err))
+		return
 	}
 	request.Header.Add("Content-Type", "text/plain")
 
 	response, err := a.client.Do(request)
 	if err != nil {
-		fmt.Println(fmt.Errorf("failed to make a request. error: %w", err))
+		fmt.Println(fmt.Errorf("failed to make a request: %w", err))
 		return
 	}
 
-	fmt.Println("Code: ", response.Status)
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(fmt.Errorf("failed to read response body: %w", err))
+		return
 	}
 	defer response.Body.Close()
-	fmt.Println(string(body))
+
+	log.Printf("Code: %v: %s", response.Status, string(body))
+}
+
+func (a *Agent) sendPostJSON(metric *Metric) {
+	payloadBuf := new(bytes.Buffer)
+	json.NewEncoder(payloadBuf).Encode(metric)
+
+	endpoint := fmt.Sprintf("%s/update/", a.upstream)
+	request, err := http.NewRequest(http.MethodPost, endpoint, payloadBuf)
+	if err != nil {
+		log.Println(fmt.Errorf("failed to build a request: %w", err))
+		return
+	}
+	request.Header.Add("Content-Type", "application/json")
+
+	response, err := a.client.Do(request)
+	if err != nil {
+		log.Println(fmt.Errorf("failed to make a request: %w", err))
+		return
+	}
+	defer response.Body.Close()
+
+	log.Printf("Code: %v", response.Status)
 }
