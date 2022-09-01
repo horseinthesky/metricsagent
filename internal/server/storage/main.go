@@ -19,10 +19,11 @@ type Metric struct {
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
 type Storage interface {
-	Set(metric *Metric) error
+	Set(metric Metric) error
 	Get(name string) (Metric, error)
 	GetAll() map[string]Metric
 }

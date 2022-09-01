@@ -14,7 +14,7 @@ func NewMemoryStorage() *Memory {
 	return &Memory{db: map[string]Metric{}}
 }
 
-func (m *Memory) Set(metric *Metric) error {
+func (m *Memory) Set(metric Metric) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -26,10 +26,10 @@ func (m *Memory) Set(metric *Metric) error {
 			return nil
 
 		}
-		m.db[metric.ID] = *metric
+		m.db[metric.ID] = metric
 		return nil
 	case Gauge.String():
-		m.db[metric.ID] = *metric
+		m.db[metric.ID] = metric
 		return nil
 	}
 

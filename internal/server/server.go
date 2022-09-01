@@ -18,6 +18,7 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
 }
 
 type Server struct {
@@ -108,7 +109,7 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	}
 }
 
-func (s *Server) saveMetric(metric *storage.Metric) error {
+func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.storage.Set(metric)
 
 	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {

@@ -21,29 +21,6 @@ const (
 	defaultStoreFile     = "/tmp/devops-metrics-db.json"
 )
 
-var (
-	address       *string
-	restore       *bool
-	storeInterval *time.Duration
-	storeFile     *string
-	cfg           = &server.Config{}
-)
-
-func overrideConfig(cfg *server.Config) {
-	if _, ok := os.LookupEnv("ADDRESS"); !ok {
-		cfg.Address = *address
-	}
-	if _, ok := os.LookupEnv("STORE_INTERVAL"); !ok {
-		cfg.StoreInterval = *storeInterval
-	}
-	if _, ok := os.LookupEnv("STORE_FILE"); !ok {
-		cfg.StoreFile = *storeFile
-	}
-	if _, ok := os.LookupEnv("RESTORE"); !ok {
-		cfg.Restore = *restore
-	}
-}
-
 func getConfig() *server.Config {
 	cfg := &server.Config{}
 
@@ -51,6 +28,7 @@ func getConfig() *server.Config {
 	flag.BoolVar(&cfg.Restore, "r", defaultRestoreFlag, "If should restore metrics on startup")
 	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
 	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
+	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.Parse()
 
 	if err := env.Parse(cfg); err != nil {

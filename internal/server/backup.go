@@ -72,7 +72,7 @@ func (s *Server) restore() {
 	}
 
 	for _, metric := range metrics {
-		err := s.storage.Set(&metric)
+		err := s.storage.Set(metric)
 		if err != nil {
 			log.Println(fmt.Errorf("failed to restore metric %s: %w", metric.ID, err))
 		}
