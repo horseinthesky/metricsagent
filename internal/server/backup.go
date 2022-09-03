@@ -57,17 +57,17 @@ func (s *Server) dump() {
 	}
 
 	if err := s.backuper.WriteMetrics(metrics); err != nil {
-		log.Println(fmt.Errorf("failed to dump metrics to %s: %w", s.config.StoreFile, err))
+		log.Println(fmt.Errorf("failed to dump metrics to %s: %w", s.backuper.filename, err))
 		return
 	}
 
-	log.Printf("successfully dumped all metrics to %s", s.config.StoreFile)
+	log.Printf("successfully dumped all metrics to %s", s.backuper.filename)
 }
 
 func (s *Server) restore() {
 	metrics, err := s.backuper.ReadMetrics()
 	if err != nil {
-		log.Println(fmt.Errorf("failed to restore metrics from %s: %w", s.config.StoreFile, err))
+		log.Println(fmt.Errorf("failed to restore metrics from %s: %w", s.backuper.filename, err))
 		return
 	}
 
@@ -78,6 +78,5 @@ func (s *Server) restore() {
 		}
 	}
 
-	log.Printf("successfully restored all metrics from %s", s.config.StoreFile)
+	log.Printf("successfully restored all metrics from %s", s.backuper.filename)
 }
-

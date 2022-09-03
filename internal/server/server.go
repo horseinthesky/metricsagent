@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
@@ -46,16 +45,6 @@ func New(config *Config) *Server {
 	server := &Server{r, config, memoryDB, backuper, nil}
 	server.setupRouter()
 
-	// DB
-	if config.DatabaseDSN != "" {
-		db, err := sql.Open("pgx", config.DatabaseDSN)
-		if err != nil {
-			log.Printf("failed to open DB connection: %s", err)
-		}
-
-		server.db = db
-	}
-
 	return server
 }
 
@@ -91,10 +80,7 @@ func (s *Server) setupRouter() {
 	s.Get("/ping", s.handlePingDB())
 }
 
-func (s *Server) Start(rootCtx context.Context) {
-	ctx, cancel := context.WithCancel(rootCtx)
-	defer cancel()
-
+func (s *Server) Start(ctx context.Context) {
 	// Restore metrics from backup
 	if s.config.Restore {
 		s.restore()
@@ -103,6 +89,11 @@ func (s *Server) Start(rootCtx context.Context) {
 	// Backup metrics periodically
 	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
 		go s.startPeriodicMetricsDump(ctx)
+	}
+
+	// Establish DB connection
+	if s.config.DatabaseDSN != "" {
+		go s.runDB(ctx)
 	}
 
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
