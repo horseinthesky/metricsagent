@@ -21,5 +21,4 @@ func (s *Server) runDB(ctx context.Context) {
 
 	s.db.Close()
 	log.Println("DB connection closed")
-	return
 }
