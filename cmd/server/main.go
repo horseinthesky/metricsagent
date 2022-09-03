@@ -29,6 +29,7 @@ func getConfig() *server.Config {
 	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
 	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
+	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
 	flag.Parse()
 
 	if err := env.Parse(cfg); err != nil {
@@ -54,5 +55,5 @@ func main() {
 	log.Printf("signal received: %v; terminating...\n", sig)
 
 	cancel()
-	time.Sleep(200 *time.Millisecond)
+	time.Sleep(200 * time.Millisecond)
 }

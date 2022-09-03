@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"strconv"
 	"text/template"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
@@ -17,12 +19,12 @@ import (
 
 const dashboardTemplate = "internal/server/templates/dashboard.html"
 
-func (s *Server) HandleNotFound(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func (s *Server) HandleDashboard() http.HandlerFunc {
+func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
@@ -56,7 +58,7 @@ func (s *Server) HandleDashboard() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
+func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")
 		metricName := chi.URLParam(r, "metricName")
@@ -101,7 +103,7 @@ func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleLoadTextMetric() http.HandlerFunc {
+func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
 
@@ -125,7 +127,7 @@ func (s *Server) HandleLoadTextMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
+func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
@@ -144,14 +146,16 @@ func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		// Check metric Hash
+		// Check metric hash
 		if s.config.Key != "" {
 			localHash := s.generateHash(metric)
 			remoteHash, err := hex.DecodeString(metric.Hash)
+
 			if err != nil {
 				http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
 				return
 			}
+
 			if !hmac.Equal(localHash, remoteHash) {
 				http.Error(w, `{"error": "invalid hash"}`, http.StatusBadRequest)
 				return
@@ -169,7 +173,7 @@ func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
+func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
@@ -194,10 +198,12 @@ func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
 			return
 		}
 
+		// Set metric hash
 		if s.config.Key != "" {
 			metric.Hash = hex.EncodeToString(s.generateHash(metric))
 		}
 
+		// Send metric
 		res, err := json.Marshal(metric)
 		if err != nil {
 			http.Error(w, `{"error": "faied to marshal metric"}`, http.StatusInternalServerError)
@@ -205,5 +211,21 @@ func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
 		}
 
 		w.Write([]byte(res))
+	})
+}
+
+func (s *Server) handlePingDB() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		if err := s.db.PingContext(ctx); err != nil {
+			log.Printf("failed to ping DB: %s", err)
+			http.Error(w, "failed to ping DB", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
 }

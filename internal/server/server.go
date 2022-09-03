@@ -2,11 +2,13 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
@@ -19,6 +21,7 @@ type Config struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
 type Server struct {
@@ -26,6 +29,7 @@ type Server struct {
 	config   *Config
 	storage  storage.Storage
 	backuper *Backuper
+	db       *sql.DB
 }
 
 func New(config *Config) *Server {
@@ -39,8 +43,18 @@ func New(config *Config) *Server {
 	backuper := NewBackuper(config.StoreFile)
 
 	// Server
-	server := &Server{r, config, memoryDB, backuper}
+	server := &Server{r, config, memoryDB, backuper, nil}
 	server.setupRouter()
+
+	// DB
+	if config.DatabaseDSN != "" {
+		db, err := sql.Open("pgx", config.DatabaseDSN)
+		if err != nil {
+			log.Printf("failed to open DB connection: %s", err)
+		}
+
+		server.db = db
+	}
 
 	return server
 }
@@ -58,22 +72,23 @@ func (s *Server) setupRouter() {
 	s.Route("/update", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Post("/{metricName}/{value}", s.HandleSaveTextMetric())
+			r.Post("/{metricName}/{value}", s.handleSaveTextMetric())
 		})
-		r.Post("/", s.HandleSaveJSONMetric())
-		r.Post("/*", s.HandleNotFound)
+		r.Post("/", s.handleSaveJSONMetric())
+		r.Post("/*", s.handleNotFound)
 	})
 
 	s.Route("/value", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Get("/{metricName}", s.HandleLoadTextMetric())
+			r.Get("/{metricName}", s.handleLoadTextMetric())
 		})
-		r.Post("/", s.HandleLoadJSONMetric())
-		r.Get("/*", s.HandleNotFound)
+		r.Post("/", s.handleLoadJSONMetric())
+		r.Get("/*", s.handleNotFound)
 	})
 
-	s.Get("/", s.HandleDashboard())
+	s.Get("/", s.handleDashboard())
+	s.Get("/ping", s.handlePingDB())
 }
 
 func (s *Server) Start(rootCtx context.Context) {
