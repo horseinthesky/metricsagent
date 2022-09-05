@@ -84,14 +84,16 @@ func (s *Server) setupRouter() {
 }
 
 func (s *Server) Run(ctx context.Context) {
-	// Restore metrics from backup
-	if s.config.Restore {
-		s.restore()
-	}
+	if s.config.DatabaseDSN == "" {
+		// Restore metrics from backup
+		if s.config.Restore {
+			s.restore()
+		}
 
-	// Backup metrics periodically
-	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
-		go s.startPeriodicMetricsDump(ctx)
+		// Backup metrics periodically
+		if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
+			go s.startPeriodicMetricsDump(ctx)
+		}
 	}
 
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
@@ -100,7 +102,7 @@ func (s *Server) Run(ctx context.Context) {
 func (s *Server) Stop() {
 	if s.config.DatabaseDSN != "" {
 		s.db.Close()
-		log.Printf("connection to database closed", s.config.DatabaseDSN)
+		log.Println("connection to database closed")
 	}
 }
 
