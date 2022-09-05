@@ -96,14 +96,17 @@ func (s *Server) Run(ctx context.Context) {
 		}
 	}
 
+	err := s.db.Init(ctx)
+	if err != nil {
+		log.Fatal("failed to init db: %w", err)
+	}
+
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
 }
 
 func (s *Server) Stop() {
-	if s.config.DatabaseDSN != "" {
-		s.db.Close()
-		log.Println("connection to database closed")
-	}
+	s.db.Close()
+	log.Println("connection to database closed")
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {

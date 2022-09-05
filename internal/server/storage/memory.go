@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -13,6 +14,12 @@ type Memory struct {
 
 func NewMemoryStorage() *Memory {
 	return &Memory{db: map[string]Metric{}}
+}
+
+func (m *Memory) Init(ctx context.Context) error {
+	log.Println("memory database initialized")
+
+	return nil
 }
 
 func (m *Memory) Check(ctx context.Context) error {

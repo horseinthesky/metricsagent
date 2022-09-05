@@ -22,6 +22,25 @@ func NewDBStorage(databaseDSN string) *DB {
 	return &DB{db: db}
 }
 
+func (d *DB) Init(ctx context.Context) error {
+	initQuery := `
+		CREATE TABLE IF NOT EXISTS metrics (
+			id text PRIMARY KEY,
+			mtype text NOT NULL,
+			delta bigint,
+			value double precision
+		)
+	`
+
+	if _, err := d.db.ExecContext(ctx, initQuery); err != nil {
+		return err
+	}
+
+	log.Println("postgresql database initialized")
+
+	return nil
+}
+
 func (d *DB) Check(ctx context.Context) error {
 	return d.db.PingContext(ctx)
 }

@@ -25,6 +25,7 @@ type Metric struct {
 }
 
 type Storage interface {
+	Init(context.Context) error
 	Check(context.Context) error
 	Set(Metric) error
 	Get(string) (Metric, error)
