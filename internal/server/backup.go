@@ -52,7 +52,13 @@ func (b Backuper) ReadMetrics() ([]storage.Metric, error) {
 func (s *Server) dump() {
 	var metrics []storage.Metric
 
-	for _, metric := range s.db.GetAll() {
+	allMetrics, err := s.db.GetAll()
+	if err != nil {
+		log.Printf("failed to get stored metrics: %s", err)
+		return
+	}
+
+	for _, metric := range allMetrics {
 		metrics = append(metrics, metric)
 	}
 

@@ -60,7 +60,7 @@ func (m *Memory) Get(name string) (Metric, error) {
 	return metric, nil
 }
 
-func (m *Memory) GetAll() map[string]Metric {
+func (m *Memory) GetAll() (map[string]Metric, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -69,7 +69,7 @@ func (m *Memory) GetAll() map[string]Metric {
 		newDB[k] = v
 	}
 
-	return newDB
+	return newDB, nil
 }
 
 func (m *Memory) Close() {

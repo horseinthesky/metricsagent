@@ -29,7 +29,7 @@ type Storage interface {
 	Check(context.Context) error
 	Set(Metric) error
 	Get(string) (Metric, error)
-	GetAll() map[string]Metric
+	GetAll() (map[string]Metric, error)
 	Close()
 }
 

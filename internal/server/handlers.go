@@ -28,7 +28,13 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
-		for name, metric := range s.db.GetAll() {
+		allMetrics,err := s.db.GetAll()
+		if err != nil {
+			log.Printf("failed to get stored metrics: %s", err)
+			return
+		}
+
+		for name, metric := range allMetrics {
 			switch metric.MType {
 			case storage.Counter.String():
 				floatedMetrics[name] = float64(*metric.Delta)
@@ -165,7 +171,8 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 		// Save metric
 		err = s.saveMetric(metric)
 		if err != nil {
-			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusBadRequest)
+			log.Printf("failed to store metric: %s", err)
+			http.Error(w, `{"error": "failed to store metric"}`, http.StatusBadRequest)
 			return
 		}
 
