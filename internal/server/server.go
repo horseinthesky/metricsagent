@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -26,23 +25,27 @@ type Config struct {
 type Server struct {
 	*chi.Mux
 	config   *Config
-	storage  storage.Storage
+	db       storage.Storage
 	backuper *Backuper
-	db       *sql.DB
 }
 
 func New(config *Config) *Server {
 	// Router
 	r := chi.NewRouter()
 
-	// Srorage
-	memoryDB := storage.NewMemoryStorage()
+	// Storage
+	var db storage.Storage
+	if config.DatabaseDSN != "" {
+		db = storage.NewDBStorage(config.DatabaseDSN)
+	} else {
+		db = storage.NewMemoryStorage()
+	}
 
 	// Backuper
 	backuper := NewBackuper(config.StoreFile)
 
 	// Server
-	server := &Server{r, config, memoryDB, backuper, nil}
+	server := &Server{r, config, db, backuper}
 	server.setupRouter()
 
 	return server
@@ -80,7 +83,7 @@ func (s *Server) setupRouter() {
 	s.Get("/ping", s.handlePingDB())
 }
 
-func (s *Server) Start(ctx context.Context) {
+func (s *Server) Run(ctx context.Context) {
 	// Restore metrics from backup
 	if s.config.Restore {
 		s.restore()
@@ -91,12 +94,14 @@ func (s *Server) Start(ctx context.Context) {
 		go s.startPeriodicMetricsDump(ctx)
 	}
 
-	// Establish DB connection
-	if s.config.DatabaseDSN != "" {
-		go s.runDB(ctx)
-	}
-
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
+}
+
+func (s *Server) Stop() {
+	if s.config.DatabaseDSN != "" {
+		s.db.Close()
+		log.Printf("connection to database closed", s.config.DatabaseDSN)
+	}
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
@@ -116,7 +121,7 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 }
 
 func (s *Server) saveMetric(metric storage.Metric) error {
-	err := s.storage.Set(metric)
+	err := s.db.Set(metric)
 
 	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
 		s.dump()

@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 type MetricType int
 
 const (
@@ -23,9 +25,11 @@ type Metric struct {
 }
 
 type Storage interface {
-	Set(metric Metric) error
-	Get(name string) (Metric, error)
+	Check(context.Context) error
+	Set(Metric) error
+	Get(string) (Metric, error)
 	GetAll() map[string]Metric
+	Close()
 }
 
 func UnsupportedType(mtype string) bool {

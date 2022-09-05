@@ -28,7 +28,7 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
-		for name, metric := range s.storage.GetAll() {
+		for name, metric := range s.db.GetAll() {
 			switch metric.MType {
 			case storage.Counter.String():
 				floatedMetrics[name] = float64(*metric.Delta)
@@ -93,7 +93,7 @@ func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 			}
 		}
 
-		err := s.storage.Set(metric)
+		err := s.db.Set(metric)
 		if err != nil {
 			http.Error(w, "failed to save metric", http.StatusInternalServerError)
 			return
@@ -107,7 +107,7 @@ func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
 
-		metric, err := s.storage.Get(metricName)
+		metric, err := s.db.Get(metricName)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(http.StatusText(http.StatusNotFound)))
@@ -192,7 +192,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 		}
 
 		// Get metric
-		metric, err := s.storage.Get(metricRequest.ID)
+		metric, err := s.db.Get(metricRequest.ID)
 		if err != nil {
 			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
 			return
@@ -219,7 +219,7 @@ func (s *Server) handlePingDB() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 		defer cancel()
 
-		if err := s.db.PingContext(ctx); err != nil {
+		if err := s.db.Check(ctx); err != nil {
 			log.Printf("failed to ping DB: %s", err)
 			http.Error(w, "failed to ping DB", http.StatusInternalServerError)
 			return

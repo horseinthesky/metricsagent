@@ -45,7 +45,7 @@ func main() {
 	metricsServer := server.New(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go metricsServer.Start(ctx)
+	go metricsServer.Run(ctx)
 
 	// Handle graceful shutdown
 	term := make(chan os.Signal, 1)
@@ -54,6 +54,7 @@ func main() {
 	sig := <-term
 	log.Printf("signal received: %v; terminating...\n", sig)
 
+	metricsServer.Stop()
 	cancel()
 	time.Sleep(200 * time.Millisecond)
 }

@@ -1,17 +1,22 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"sync"
 )
 
 type Memory struct {
-	sync.Mutex
+	sync.RWMutex
 	db map[string]Metric
 }
 
 func NewMemoryStorage() *Memory {
 	return &Memory{db: map[string]Metric{}}
+}
+
+func (m *Memory) Check(ctx context.Context) error {
+	return nil
 }
 
 func (m *Memory) Set(metric Metric) error {
@@ -37,8 +42,8 @@ func (m *Memory) Set(metric Metric) error {
 }
 
 func (m *Memory) Get(name string) (Metric, error) {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	metric, ok := m.db[name]
 	if !ok {
@@ -49,8 +54,8 @@ func (m *Memory) Get(name string) (Metric, error) {
 }
 
 func (m *Memory) GetAll() map[string]Metric {
-	m.Lock()
-	defer m.Unlock()
+	m.RLock()
+	defer m.RUnlock()
 
 	newDB := map[string]Metric{}
 	for k, v := range m.db {
@@ -58,4 +63,7 @@ func (m *Memory) GetAll() map[string]Metric {
 	}
 
 	return newDB
+}
+
+func (m *Memory) Close() {
 }

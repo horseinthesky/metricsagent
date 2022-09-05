@@ -52,7 +52,7 @@ func (b Backuper) ReadMetrics() ([]storage.Metric, error) {
 func (s *Server) dump() {
 	var metrics []storage.Metric
 
-	for _, metric := range s.storage.GetAll() {
+	for _, metric := range s.db.GetAll() {
 		metrics = append(metrics, metric)
 	}
 
@@ -72,7 +72,7 @@ func (s *Server) restore() {
 	}
 
 	for _, metric := range metrics {
-		err := s.storage.Set(metric)
+		err := s.db.Set(metric)
 		if err != nil {
 			log.Println(fmt.Errorf("failed to restore metric %s: %w", metric.ID, err))
 		}
