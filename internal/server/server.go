@@ -125,8 +125,10 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.db.Set(metric)
 
-	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
-		s.dump()
+	if s.config.DatabaseDSN == "" {
+		if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+			s.dump()
+		}
 	}
 
 	return err
