@@ -84,6 +84,47 @@ func (d *DB) Set(metric Metric) error {
 	return tx.Commit()
 }
 
+func (d *DB) SetBulk(metrics []Metric) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var stmt *sql.Stmt
+
+	for _, metric := range metrics {
+		switch metric.MType {
+		case Counter.String():
+			stmt, err = tx.Prepare(`
+				INSERT INTO metrics(id, mtype, delta) VALUES($1,$2,$3)
+				ON CONFLICT (id) DO UPDATE
+				SET mtype = $2, delta = metrics.delta + $3
+			`)
+			if err != nil {
+				return err
+			}
+			if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Delta); err != nil {
+				return err
+			}
+		case Gauge.String():
+			stmt, err = tx.Prepare(`
+				INSERT INTO metrics(id, mtype, value) VALUES($1,$2,$3)
+				ON CONFLICT (id) DO UPDATE
+				SET mtype = $2, value = $3
+			`)
+			if err != nil {
+				return err
+			}
+			if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Value); err != nil {
+				return err
+			}
+		}
+	}
+	defer stmt.Close()
+
+	return tx.Commit()
+}
 func (d *DB) Get(name string) (Metric, error) {
 	query := `SELECT id, mtype, delta, value FROM metrics WHERE id=$1`
 

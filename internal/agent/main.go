@@ -61,7 +61,7 @@ func (a Agent) Run(ctx context.Context) {
 			log.Println("shutting down agent")
 			return
 		case <-a.ReportTicker.C:
-			a.SendMetricsJSON()
+			a.SendMetricsJSONBulk()
 		case <-a.PollTicker.C:
 			a.PollCounter++
 

@@ -48,6 +48,27 @@ func (m *Memory) Set(metric Metric) error {
 	return fmt.Errorf("failed to save metric")
 }
 
+func (m *Memory) SetBulk(metrics []Metric) error {
+	m.Lock()
+	defer m.Unlock()
+
+	for _, metric := range metrics {
+		switch metric.MType {
+		case Counter.String():
+			oldMetric, ok := m.db[metric.ID]
+			if ok {
+				*oldMetric.Delta += *metric.Delta
+				continue
+
+			}
+			m.db[metric.ID] = metric
+		case Gauge.String():
+			m.db[metric.ID] = metric
+		}
+	}
+
+	return nil
+}
 func (m *Memory) Get(name string) (Metric, error) {
 	m.RLock()
 	defer m.RUnlock()

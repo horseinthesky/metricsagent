@@ -28,6 +28,7 @@ type Storage interface {
 	Init(context.Context) error
 	Check(context.Context) error
 	Set(Metric) error
+	SetBulk([]Metric) error
 	Get(string) (Metric, error)
 	GetAll() (map[string]Metric, error)
 	Close()

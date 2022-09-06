@@ -69,6 +69,7 @@ func (s *Server) setupRouter() {
 		r.Post("/", s.handleSaveJSONMetric())
 		r.Post("/*", s.handleNotFound)
 	})
+	s.Post("/updates/", s.handleSaveJSONMetrics())
 
 	s.Route("/value", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
@@ -127,6 +128,18 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 
 func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.db.Set(metric)
+
+	if s.config.DatabaseDSN == "" {
+		if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+			s.dump()
+		}
+	}
+
+	return err
+}
+
+func (s *Server) saveMetricsBulk(metrics []storage.Metric) error {
+	err := s.db.SetBulk(metrics)
 
 	if s.config.DatabaseDSN == "" {
 		if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
