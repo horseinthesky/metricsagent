@@ -23,7 +23,7 @@ func NewDBStorage(databaseDSN string) *DB {
 }
 
 func (d *DB) Init(ctx context.Context) error {
-	initQuery := `
+	schema := `
 		CREATE TABLE IF NOT EXISTS metrics (
 			id text PRIMARY KEY,
 			mtype text NOT NULL,
@@ -32,7 +32,7 @@ func (d *DB) Init(ctx context.Context) error {
 		)
 	`
 
-	if _, err := d.db.ExecContext(ctx, initQuery); err != nil {
+	if _, err := d.db.ExecContext(ctx, schema); err != nil {
 		return err
 	}
 

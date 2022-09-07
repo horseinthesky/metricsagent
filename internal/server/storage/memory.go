@@ -59,7 +59,6 @@ func (m *Memory) SetBulk(metrics []Metric) error {
 			if ok {
 				*oldMetric.Delta += *metric.Delta
 				continue
-
 			}
 			m.db[metric.ID] = metric
 		case Gauge.String():
