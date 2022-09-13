@@ -68,7 +68,7 @@ func (m *Memory) SetBulk(metrics []Metric) error {
 
 	return nil
 }
-func (m *Memory) Get(name string) (Metric, error) {
+func (m *Memory) Get(ctx context.Context, name string) (Metric, error) {
 	m.RLock()
 	defer m.RUnlock()
 
@@ -80,7 +80,7 @@ func (m *Memory) Get(name string) (Metric, error) {
 	return metric, nil
 }
 
-func (m *Memory) GetAll() (map[string]Metric, error) {
+func (m *Memory) GetAll(ctx context.Context) (map[string]Metric, error) {
 	m.RLock()
 	defer m.RUnlock()
 

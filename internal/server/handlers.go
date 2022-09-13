@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"crypto/hmac"
 	"encoding/hex"
 	"encoding/json"
@@ -11,7 +10,6 @@ import (
 	"os"
 	"strconv"
 	"text/template"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
@@ -28,7 +26,7 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
-		allMetrics, err := s.db.GetAll()
+		allMetrics, err := s.db.GetAll(r.Context())
 		if err != nil {
 			log.Printf("failed to get stored metrics: %s", err)
 			return
@@ -113,7 +111,7 @@ func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
 
-		metric, err := s.db.Get(metricName)
+		metric, err := s.db.Get(r.Context(), metricName)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(http.StatusText(http.StatusNotFound)))
@@ -248,7 +246,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 		}
 
 		// Get metric
-		metric, err := s.db.Get(metricRequest.ID)
+		metric, err := s.db.Get(r.Context(), metricRequest.ID)
 		if err != nil {
 			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
 			return
@@ -272,10 +270,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 
 func (s *Server) handlePingDB() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-		defer cancel()
-
-		if err := s.db.Check(ctx); err != nil {
+		if err := s.db.Check(r.Context()); err != nil {
 			log.Printf("failed to ping DB: %s", err)
 			http.Error(w, "failed to ping DB", http.StatusInternalServerError)
 			return

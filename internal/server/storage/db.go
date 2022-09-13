@@ -46,42 +46,30 @@ func (d *DB) Check(ctx context.Context) error {
 }
 
 func (d *DB) Set(metric Metric) error {
-	tx, err := d.db.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	var err error
 
-	var stmt *sql.Stmt
 	switch metric.MType {
 	case Counter.String():
-		stmt, err = tx.Prepare(`
+		_, err = d.db.Exec(`
 			INSERT INTO metrics(id, mtype, delta) VALUES($1,$2,$3)
 			 ON CONFLICT (id) DO UPDATE
 			 SET mtype = $2, delta = metrics.delta + $3
-		`)
+		`, metric.ID, metric.MType, metric.Delta)
 		if err != nil {
-			return err
-		}
-		if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Delta); err != nil {
 			return err
 		}
 	case Gauge.String():
-		stmt, err = tx.Prepare(`
+		_, err = d.db.Exec(`
 			INSERT INTO metrics(id, mtype, value) VALUES($1,$2,$3)
 			 ON CONFLICT (id) DO UPDATE
 			 SET mtype = $2, value = $3
-		`)
+		`, metric.ID, metric.MType, metric.Value)
 		if err != nil {
 			return err
 		}
-		if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Value); err != nil {
-			return err
-		}
 	}
-	defer stmt.Close()
 
-	return tx.Commit()
+	return nil
 }
 
 func (d *DB) SetBulk(metrics []Metric) error {
@@ -104,7 +92,7 @@ func (d *DB) SetBulk(metrics []Metric) error {
 			if err != nil {
 				return err
 			}
-			if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Delta); err != nil {
+			if _, err = stmt.Exec(metric.ID, metric.MType, metric.Delta); err != nil {
 				return err
 			}
 		case Gauge.String():
@@ -116,7 +104,7 @@ func (d *DB) SetBulk(metrics []Metric) error {
 			if err != nil {
 				return err
 			}
-			if _, err = stmt.ExecContext(context.Background(), metric.ID, metric.MType, metric.Value); err != nil {
+			if _, err = stmt.Exec(metric.ID, metric.MType, metric.Value); err != nil {
 				return err
 			}
 		}
@@ -125,11 +113,11 @@ func (d *DB) SetBulk(metrics []Metric) error {
 
 	return tx.Commit()
 }
-func (d *DB) Get(name string) (Metric, error) {
+func (d *DB) Get(ctx context.Context, name string) (Metric, error) {
 	query := `SELECT id, mtype, delta, value FROM metrics WHERE id=$1`
 
 	metric := Metric{}
-	if err := d.db.QueryRow(query, name).Scan(&metric.ID, &metric.MType, &metric.Delta, &metric.Value); err != nil {
+	if err := d.db.QueryRowContext(ctx, query, name).Scan(&metric.ID, &metric.MType, &metric.Delta, &metric.Value); err != nil {
 		log.Printf("failed to query db: %s", err)
 		return Metric{}, err
 	}
@@ -137,10 +125,10 @@ func (d *DB) Get(name string) (Metric, error) {
 	return metric, nil
 }
 
-func (d *DB) GetAll() (map[string]Metric, error) {
+func (d *DB) GetAll(ctx context.Context) (map[string]Metric, error) {
 	query := `SELECT * FROM metrics`
 
-	rows, err := d.db.QueryContext(context.Background(), query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}

@@ -1,10 +1,12 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
@@ -50,13 +52,16 @@ func (b Backuper) ReadMetrics() ([]storage.Metric, error) {
 
 // Server backup/restomre methods
 func (s *Server) dump() {
-	var metrics []storage.Metric
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	allMetrics, err := s.db.GetAll()
+	allMetrics, err := s.db.GetAll(ctx)
 	if err != nil {
 		log.Printf("failed to get stored metrics: %s", err)
 		return
 	}
+
+	var metrics []storage.Metric
 
 	for _, metric := range allMetrics {
 		metrics = append(metrics, metric)
