@@ -27,6 +27,7 @@ func getConfig() *agent.Config {
 	flag.StringVar(&cfg.Address, "a", defaultAddress, "Address for sending data to")
 	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
 	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
+	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.Parse()
 
 	if err := env.Parse(cfg); err != nil {

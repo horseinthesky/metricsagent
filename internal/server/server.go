@@ -18,12 +18,14 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
+	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
 type Server struct {
 	*chi.Mux
 	config   *Config
-	storage  storage.Storage
+	db       storage.Storage
 	backuper *Backuper
 }
 
@@ -31,14 +33,19 @@ func New(config *Config) *Server {
 	// Router
 	r := chi.NewRouter()
 
-	// Srorage
-	memoryDB := storage.NewMemoryStorage()
+	// Storage
+	var db storage.Storage
+	if config.DatabaseDSN != "" {
+		db = storage.NewDBStorage(config.DatabaseDSN)
+	} else {
+		db = storage.NewMemoryStorage()
+	}
 
 	// Backuper
 	backuper := NewBackuper(config.StoreFile)
 
 	// Server
-	server := &Server{r, config, memoryDB, backuper}
+	server := &Server{r, config, db, backuper}
 	server.setupRouter()
 
 	return server
@@ -57,39 +64,50 @@ func (s *Server) setupRouter() {
 	s.Route("/update", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Post("/{metricName}/{value}", s.HandleSaveTextMetric())
+			r.Post("/{metricName}/{value}", s.handleSaveTextMetric())
 		})
-		r.Post("/", s.HandleSaveJSONMetric())
-		r.Post("/*", s.HandleNotFound)
+		r.Post("/", s.handleSaveJSONMetric())
+		r.Post("/*", s.handleNotFound)
 	})
+	s.Post("/updates/", s.handleSaveJSONMetrics())
 
 	s.Route("/value", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
-			r.Get("/{metricName}", s.HandleLoadTextMetric())
+			r.Get("/{metricName}", s.handleLoadTextMetric())
 		})
-		r.Post("/", s.HandleLoadJSONMetric())
-		r.Get("/*", s.HandleNotFound)
+		r.Post("/", s.handleLoadJSONMetric())
+		r.Get("/*", s.handleNotFound)
 	})
 
-	s.Get("/", s.HandleDashboard())
+	s.Get("/", s.handleDashboard())
+	s.Get("/ping", s.handlePingDB())
 }
 
-func (s *Server) Start(rootCtx context.Context) {
-	ctx, cancel := context.WithCancel(rootCtx)
-	defer cancel()
+func (s *Server) Run(ctx context.Context) {
+	if s.config.DatabaseDSN == "" {
+		// Restore metrics from backup
+		if s.config.Restore {
+			s.restore()
+		}
 
-	// Restore metrics from backup
-	if s.config.Restore {
-		s.restore()
+		// Backup metrics periodically
+		if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
+			go s.startPeriodicMetricsDump(ctx)
+		}
 	}
 
-	// Backup metrics periodically
-	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
-		go s.startPeriodicMetricsDump(ctx)
+	err := s.db.Init(ctx)
+	if err != nil {
+		log.Fatal("failed to init db: %w", err)
 	}
 
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
+}
+
+func (s *Server) Stop() {
+	s.db.Close()
+	log.Println("connection to database closed")
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
@@ -108,11 +126,25 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	}
 }
 
-func (s *Server) saveMetric(metric *storage.Metric) error {
-	err := s.storage.Set(metric)
+func (s *Server) saveMetric(metric storage.Metric) error {
+	err := s.db.Set(metric)
 
-	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
-		s.dump()
+	if s.config.DatabaseDSN == "" {
+		if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+			s.dump()
+		}
+	}
+
+	return err
+}
+
+func (s *Server) saveMetricsBulk(metrics []storage.Metric) error {
+	err := s.db.SetBulk(metrics)
+
+	if s.config.DatabaseDSN == "" {
+		if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+			s.dump()
+		}
 	}
 
 	return err

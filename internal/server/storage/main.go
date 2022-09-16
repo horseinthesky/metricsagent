@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 type MetricType int
 
 const (
@@ -19,12 +21,17 @@ type Metric struct {
 	MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
 	Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
 type Storage interface {
-	Set(metric *Metric) error
-	Get(name string) (Metric, error)
-	GetAll() map[string]Metric
+	Init(context.Context) error
+	Check(context.Context) error
+	Set(Metric) error
+	SetBulk([]Metric) error
+	Get(context.Context, string) (Metric, error)
+	GetAll(context.Context) (map[string]Metric, error)
+	Close()
 }
 
 func UnsupportedType(mtype string) bool {

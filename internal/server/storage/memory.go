@@ -1,12 +1,14 @@
 package storage
 
 import (
+	"context"
 	"fmt"
+	"log"
 	"sync"
 )
 
 type Memory struct {
-	sync.Mutex
+	sync.RWMutex
 	db map[string]Metric
 }
 
@@ -14,7 +16,17 @@ func NewMemoryStorage() *Memory {
 	return &Memory{db: map[string]Metric{}}
 }
 
-func (m *Memory) Set(metric *Metric) error {
+func (m *Memory) Init(ctx context.Context) error {
+	log.Println("memory database initialized")
+
+	return nil
+}
+
+func (m *Memory) Check(ctx context.Context) error {
+	return nil
+}
+
+func (m *Memory) Set(metric Metric) error {
 	m.Lock()
 	defer m.Unlock()
 
@@ -26,19 +38,39 @@ func (m *Memory) Set(metric *Metric) error {
 			return nil
 
 		}
-		m.db[metric.ID] = *metric
+		m.db[metric.ID] = metric
 		return nil
 	case Gauge.String():
-		m.db[metric.ID] = *metric
+		m.db[metric.ID] = metric
 		return nil
 	}
 
 	return fmt.Errorf("failed to save metric")
 }
 
-func (m *Memory) Get(name string) (Metric, error) {
+func (m *Memory) SetBulk(metrics []Metric) error {
 	m.Lock()
 	defer m.Unlock()
+
+	for _, metric := range metrics {
+		switch metric.MType {
+		case Counter.String():
+			oldMetric, ok := m.db[metric.ID]
+			if ok {
+				*oldMetric.Delta += *metric.Delta
+				continue
+			}
+			m.db[metric.ID] = metric
+		case Gauge.String():
+			m.db[metric.ID] = metric
+		}
+	}
+
+	return nil
+}
+func (m *Memory) Get(ctx context.Context, name string) (Metric, error) {
+	m.RLock()
+	defer m.RUnlock()
 
 	metric, ok := m.db[name]
 	if !ok {
@@ -48,14 +80,17 @@ func (m *Memory) Get(name string) (Metric, error) {
 	return metric, nil
 }
 
-func (m *Memory) GetAll() map[string]Metric {
-	m.Lock()
-	defer m.Unlock()
+func (m *Memory) GetAll(ctx context.Context) (map[string]Metric, error) {
+	m.RLock()
+	defer m.RUnlock()
 
 	newDB := map[string]Metric{}
 	for k, v := range m.db {
 		newDB[k] = v
 	}
 
-	return newDB
+	return newDB, nil
+}
+
+func (m *Memory) Close() {
 }

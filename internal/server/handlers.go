@@ -1,6 +1,8 @@
 package server
 
 import (
+	"crypto/hmac"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,16 +17,22 @@ import (
 
 const dashboardTemplate = "internal/server/templates/dashboard.html"
 
-func (s *Server) HandleNotFound(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
-func (s *Server) HandleDashboard() http.HandlerFunc {
+func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
-		for name, metric := range s.storage.GetAll() {
+		allMetrics, err := s.db.GetAll(r.Context())
+		if err != nil {
+			log.Printf("failed to get stored metrics: %s", err)
+			return
+		}
+
+		for name, metric := range allMetrics {
 			switch metric.MType {
 			case storage.Counter.String():
 				floatedMetrics[name] = float64(*metric.Delta)
@@ -54,13 +62,13 @@ func (s *Server) HandleDashboard() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
+func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")
 		metricName := chi.URLParam(r, "metricName")
 		valueString := chi.URLParam(r, "value")
 
-		var metric *storage.Metric
+		var metric storage.Metric
 
 		switch metricType {
 		case storage.Counter.String():
@@ -70,7 +78,7 @@ func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
 				w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 				return
 			}
-			metric = &storage.Metric{
+			metric = storage.Metric{
 				ID:    metricName,
 				MType: metricType,
 				Delta: &value,
@@ -82,14 +90,14 @@ func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
 				w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 				return
 			}
-			metric = &storage.Metric{
+			metric = storage.Metric{
 				ID:    metricName,
 				MType: metricType,
 				Value: &value,
 			}
 		}
 
-		err := s.storage.Set(metric)
+		err := s.db.Set(metric)
 		if err != nil {
 			http.Error(w, "failed to save metric", http.StatusInternalServerError)
 			return
@@ -99,11 +107,11 @@ func (s *Server) HandleSaveTextMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleLoadTextMetric() http.HandlerFunc {
+func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
 
-		metric, err := s.storage.Get(metricName)
+		metric, err := s.db.Get(r.Context(), metricName)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(http.StatusText(http.StatusNotFound)))
@@ -123,26 +131,48 @@ func (s *Server) HandleLoadTextMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
+func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
-		metric := &storage.Metric{}
-		err := json.NewDecoder(r.Body).Decode(metric)
+		// Get metric
+		metrics := []storage.Metric{}
+		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
 			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
 			return
 		}
 		defer r.Body.Close()
 
-		if storage.UnsupportedType(metric.MType) {
-			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
-			return
+		for _, metric := range metrics {
+			// Check metric type
+			if storage.UnsupportedType(metric.MType) {
+				http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
+				return
+			}
+
+			// Check metric hash
+			if s.config.Key != "" {
+				localHash := s.generateHash(metric)
+				remoteHash, err := hex.DecodeString(metric.Hash)
+
+				if err != nil {
+					http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
+					return
+				}
+
+				if !hmac.Equal(localHash, remoteHash) {
+					http.Error(w, `{"error": "invalid hash"}`, http.StatusBadRequest)
+					return
+				}
+			}
 		}
 
-		err = s.saveMetric(metric)
+		// Save metric
+		err = s.saveMetricsBulk(metrics)
 		if err != nil {
-			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusBadRequest)
+			log.Printf("failed to store metric: %s", err)
+			http.Error(w, `{"error": "failed to store metric"}`, http.StatusBadRequest)
 			return
 		}
 
@@ -150,10 +180,58 @@ func (s *Server) HandleSaveJSONMetric() http.HandlerFunc {
 	})
 }
 
-func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
+func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
+		// Get metric
+		metric := storage.Metric{}
+		err := json.NewDecoder(r.Body).Decode(&metric)
+		if err != nil {
+			http.Error(w, `{"error": "bad or no payload"}`, http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Check metric type
+		if storage.UnsupportedType(metric.MType) {
+			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
+			return
+		}
+
+		// Check metric hash
+		if s.config.Key != "" {
+			localHash := s.generateHash(metric)
+			remoteHash, err := hex.DecodeString(metric.Hash)
+
+			if err != nil {
+				http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
+				return
+			}
+
+			if !hmac.Equal(localHash, remoteHash) {
+				http.Error(w, `{"error": "invalid hash"}`, http.StatusBadRequest)
+				return
+			}
+		}
+
+		// Save metric
+		err = s.saveMetric(metric)
+		if err != nil {
+			log.Printf("failed to store metric: %s", err)
+			http.Error(w, `{"error": "failed to store metric"}`, http.StatusBadRequest)
+			return
+		}
+
+		w.Write([]byte(`{"result": "metric saved"}`))
+	})
+}
+
+func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+
+		// Parse metric request
 		metricRequest := &storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(metricRequest)
 		if err != nil {
@@ -167,12 +245,19 @@ func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		metric, err := s.storage.Get(metricRequest.ID)
+		// Get metric
+		metric, err := s.db.Get(r.Context(), metricRequest.ID)
 		if err != nil {
 			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
 			return
 		}
 
+		// Set metric hash
+		if s.config.Key != "" {
+			metric.Hash = hex.EncodeToString(s.generateHash(metric))
+		}
+
+		// Send metric
 		res, err := json.Marshal(metric)
 		if err != nil {
 			http.Error(w, `{"error": "faied to marshal metric"}`, http.StatusInternalServerError)
@@ -180,5 +265,18 @@ func (s *Server) HandleLoadJSONMetric() http.HandlerFunc {
 		}
 
 		w.Write([]byte(res))
+	})
+}
+
+func (s *Server) handlePingDB() http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := s.db.Check(r.Context()); err != nil {
+			log.Printf("failed to ping DB: %s", err)
+			http.Error(w, "failed to ping DB", http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(http.StatusText(http.StatusOK)))
 	})
 }
