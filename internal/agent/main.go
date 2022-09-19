@@ -64,16 +64,10 @@ func New(cfg *Config) *Agent {
 func (a Agent) Run(ctx context.Context) {
 	go a.collectRuntimeMetrics(ctx)
 	go a.collectPSUtilMetrics(ctx)
+	go a.SendMetricsJSONBulk(ctx)
 
-	for {
-		select {
-		case <-ctx.Done():
-			log.Println("shutting down agent")
-			return
-		case <-a.ReportTicker.C:
-			a.SendMetricsJSONBulk()
-		}
-	}
+	<-ctx.Done()
+	log.Println("shutting down agent")
 }
 
 func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
@@ -121,13 +115,15 @@ func (a *Agent) updateRuntimeMetrics() {
 	a.metrics.Store("Sys", gauge(a.data.Sys))
 	a.metrics.Store("TotalAlloc", gauge(a.data.TotalAlloc))
 	a.metrics.Store("RandomValue", gauge(rand.Float64()))
+
+	log.Println("successfully collected runtime metrics")
 }
 
 func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("finish collecting psutil data")
+			log.Println("finished collecting psutil data")
 			return
 		case <-a.PollTicker.C:
 			memory, _ := mem.VirtualMemory()
@@ -136,6 +132,8 @@ func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
 
 			cpuUtilization, _ := cpu.Percent(0, false)
 			a.metrics.Store("CPUutilization1", gauge(cpuUtilization[0]))
+
+			log.Println("successfully collected psutil metrics")
 		}
 	}
 }
