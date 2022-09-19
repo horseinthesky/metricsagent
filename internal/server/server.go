@@ -99,7 +99,7 @@ func (s *Server) Run(ctx context.Context) {
 
 	err := s.db.Init(ctx)
 	if err != nil {
-		log.Fatal("failed to init db: %w", err)
+		log.Fatalf("failed to init db: %s", err)
 	}
 
 	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
