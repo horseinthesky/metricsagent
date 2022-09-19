@@ -83,40 +83,44 @@ func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
 			log.Println("finished collecting runtime data")
 			return
 		case <-a.PollTicker.C:
-			a.PollCounter++
-
-			runtime.ReadMemStats(a.data)
-
-			a.metrics.Store("Alloc", gauge(a.data.Alloc))
-			a.metrics.Store("BuckHashSys", gauge(a.data.BuckHashSys))
-			a.metrics.Store("Frees", gauge(a.data.Frees))
-			a.metrics.Store("GCCPUFraction", gauge(a.data.GCCPUFraction))
-			a.metrics.Store("GCSys", gauge(a.data.GCSys))
-			a.metrics.Store("HeapAlloc", gauge(a.data.HeapAlloc))
-			a.metrics.Store("HeapIdle", gauge(a.data.HeapIdle))
-			a.metrics.Store("HeapInuse", gauge(a.data.HeapInuse))
-			a.metrics.Store("HeapObjects", gauge(a.data.HeapObjects))
-			a.metrics.Store("HeapReleased", gauge(a.data.HeapReleased))
-			a.metrics.Store("HeapSys", gauge(a.data.HeapSys))
-			a.metrics.Store("LastGC", gauge(a.data.LastGC))
-			a.metrics.Store("Lookups", gauge(a.data.Lookups))
-			a.metrics.Store("MCacheInuse", gauge(a.data.MCacheInuse))
-			a.metrics.Store("MCacheSys", gauge(a.data.MCacheSys))
-			a.metrics.Store("MSpanInuse", gauge(a.data.MSpanInuse))
-			a.metrics.Store("MSpanSys", gauge(a.data.MSpanSys))
-			a.metrics.Store("Mallocs", gauge(a.data.Mallocs))
-			a.metrics.Store("NextGC", gauge(a.data.NextGC))
-			a.metrics.Store("NumForcedGC", gauge(a.data.NumForcedGC))
-			a.metrics.Store("NumGC", gauge(a.data.NumGC))
-			a.metrics.Store("OtherSys", gauge(a.data.OtherSys))
-			a.metrics.Store("PauseTotalNs", gauge(a.data.PauseTotalNs))
-			a.metrics.Store("StackInuse", gauge(a.data.StackInuse))
-			a.metrics.Store("StackSys", gauge(a.data.StackSys))
-			a.metrics.Store("Sys", gauge(a.data.Sys))
-			a.metrics.Store("TotalAlloc", gauge(a.data.TotalAlloc))
-			a.metrics.Store("RandomValue", gauge(rand.Float64()))
+			a.updateRuntimeMetrics()
 		}
 	}
+}
+
+func (a *Agent) updateRuntimeMetrics() {
+	a.PollCounter++
+
+	runtime.ReadMemStats(a.data)
+
+	a.metrics.Store("Alloc", gauge(a.data.Alloc))
+	a.metrics.Store("BuckHashSys", gauge(a.data.BuckHashSys))
+	a.metrics.Store("Frees", gauge(a.data.Frees))
+	a.metrics.Store("GCCPUFraction", gauge(a.data.GCCPUFraction))
+	a.metrics.Store("GCSys", gauge(a.data.GCSys))
+	a.metrics.Store("HeapAlloc", gauge(a.data.HeapAlloc))
+	a.metrics.Store("HeapIdle", gauge(a.data.HeapIdle))
+	a.metrics.Store("HeapInuse", gauge(a.data.HeapInuse))
+	a.metrics.Store("HeapObjects", gauge(a.data.HeapObjects))
+	a.metrics.Store("HeapReleased", gauge(a.data.HeapReleased))
+	a.metrics.Store("HeapSys", gauge(a.data.HeapSys))
+	a.metrics.Store("LastGC", gauge(a.data.LastGC))
+	a.metrics.Store("Lookups", gauge(a.data.Lookups))
+	a.metrics.Store("MCacheInuse", gauge(a.data.MCacheInuse))
+	a.metrics.Store("MCacheSys", gauge(a.data.MCacheSys))
+	a.metrics.Store("MSpanInuse", gauge(a.data.MSpanInuse))
+	a.metrics.Store("MSpanSys", gauge(a.data.MSpanSys))
+	a.metrics.Store("Mallocs", gauge(a.data.Mallocs))
+	a.metrics.Store("NextGC", gauge(a.data.NextGC))
+	a.metrics.Store("NumForcedGC", gauge(a.data.NumForcedGC))
+	a.metrics.Store("NumGC", gauge(a.data.NumGC))
+	a.metrics.Store("OtherSys", gauge(a.data.OtherSys))
+	a.metrics.Store("PauseTotalNs", gauge(a.data.PauseTotalNs))
+	a.metrics.Store("StackInuse", gauge(a.data.StackInuse))
+	a.metrics.Store("StackSys", gauge(a.data.StackSys))
+	a.metrics.Store("Sys", gauge(a.data.Sys))
+	a.metrics.Store("TotalAlloc", gauge(a.data.TotalAlloc))
+	a.metrics.Store("RandomValue", gauge(rand.Float64()))
 }
 
 func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
@@ -132,9 +136,6 @@ func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
 
 			cpuUtilization, _ := cpu.Percent(0, false)
 			a.metrics.Store("CPUutilization1", gauge(cpuUtilization[0]))
-			// for i, c := range cSlice {
-			// 	a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
-			// }
 		}
 	}
 }
