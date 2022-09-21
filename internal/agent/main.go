@@ -130,8 +130,10 @@ func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
 			a.metrics.Store("TotalMemory", gauge(memory.Total))
 			a.metrics.Store("FreeMemory", gauge(memory.Free))
 
-			cpuUtilization, _ := cpu.Percent(0, false)
-			a.metrics.Store("CPUutilization1", gauge(cpuUtilization[0]))
+			cpusUtilization, _ := cpu.Percent(0, true)
+			for i, c := range cpusUtilization {
+				a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
+			}
 
 			log.Println("successfully collected psutil metrics")
 		}
