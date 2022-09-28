@@ -32,7 +32,6 @@ type Agent struct {
 	PollTicker   *time.Ticker
 	ReportTicker *time.Ticker
 	PollCounter  int64
-	data         *runtime.MemStats
 	key          string
 	metrics      *sync.Map
 	upstream     string
@@ -51,7 +50,6 @@ func New(cfg *Config) *Agent {
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
-		data:         &runtime.MemStats{},
 		key:          cfg.Key,
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", cfg.Address),
@@ -83,37 +81,39 @@ func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
 }
 
 func (a *Agent) updateRuntimeMetrics() {
+	data := &runtime.MemStats{}
+
 	a.PollCounter++
 
-	runtime.ReadMemStats(a.data)
+	runtime.ReadMemStats(data)
 
-	a.metrics.Store("Alloc", gauge(a.data.Alloc))
-	a.metrics.Store("BuckHashSys", gauge(a.data.BuckHashSys))
-	a.metrics.Store("Frees", gauge(a.data.Frees))
-	a.metrics.Store("GCCPUFraction", gauge(a.data.GCCPUFraction))
-	a.metrics.Store("GCSys", gauge(a.data.GCSys))
-	a.metrics.Store("HeapAlloc", gauge(a.data.HeapAlloc))
-	a.metrics.Store("HeapIdle", gauge(a.data.HeapIdle))
-	a.metrics.Store("HeapInuse", gauge(a.data.HeapInuse))
-	a.metrics.Store("HeapObjects", gauge(a.data.HeapObjects))
-	a.metrics.Store("HeapReleased", gauge(a.data.HeapReleased))
-	a.metrics.Store("HeapSys", gauge(a.data.HeapSys))
-	a.metrics.Store("LastGC", gauge(a.data.LastGC))
-	a.metrics.Store("Lookups", gauge(a.data.Lookups))
-	a.metrics.Store("MCacheInuse", gauge(a.data.MCacheInuse))
-	a.metrics.Store("MCacheSys", gauge(a.data.MCacheSys))
-	a.metrics.Store("MSpanInuse", gauge(a.data.MSpanInuse))
-	a.metrics.Store("MSpanSys", gauge(a.data.MSpanSys))
-	a.metrics.Store("Mallocs", gauge(a.data.Mallocs))
-	a.metrics.Store("NextGC", gauge(a.data.NextGC))
-	a.metrics.Store("NumForcedGC", gauge(a.data.NumForcedGC))
-	a.metrics.Store("NumGC", gauge(a.data.NumGC))
-	a.metrics.Store("OtherSys", gauge(a.data.OtherSys))
-	a.metrics.Store("PauseTotalNs", gauge(a.data.PauseTotalNs))
-	a.metrics.Store("StackInuse", gauge(a.data.StackInuse))
-	a.metrics.Store("StackSys", gauge(a.data.StackSys))
-	a.metrics.Store("Sys", gauge(a.data.Sys))
-	a.metrics.Store("TotalAlloc", gauge(a.data.TotalAlloc))
+	a.metrics.Store("Alloc", gauge(data.Alloc))
+	a.metrics.Store("BuckHashSys", gauge(data.BuckHashSys))
+	a.metrics.Store("Frees", gauge(data.Frees))
+	a.metrics.Store("GCCPUFraction", gauge(data.GCCPUFraction))
+	a.metrics.Store("GCSys", gauge(data.GCSys))
+	a.metrics.Store("HeapAlloc", gauge(data.HeapAlloc))
+	a.metrics.Store("HeapIdle", gauge(data.HeapIdle))
+	a.metrics.Store("HeapInuse", gauge(data.HeapInuse))
+	a.metrics.Store("HeapObjects", gauge(data.HeapObjects))
+	a.metrics.Store("HeapReleased", gauge(data.HeapReleased))
+	a.metrics.Store("HeapSys", gauge(data.HeapSys))
+	a.metrics.Store("LastGC", gauge(data.LastGC))
+	a.metrics.Store("Lookups", gauge(data.Lookups))
+	a.metrics.Store("MCacheInuse", gauge(data.MCacheInuse))
+	a.metrics.Store("MCacheSys", gauge(data.MCacheSys))
+	a.metrics.Store("MSpanInuse", gauge(data.MSpanInuse))
+	a.metrics.Store("MSpanSys", gauge(data.MSpanSys))
+	a.metrics.Store("Mallocs", gauge(data.Mallocs))
+	a.metrics.Store("NextGC", gauge(data.NextGC))
+	a.metrics.Store("NumForcedGC", gauge(data.NumForcedGC))
+	a.metrics.Store("NumGC", gauge(data.NumGC))
+	a.metrics.Store("OtherSys", gauge(data.OtherSys))
+	a.metrics.Store("PauseTotalNs", gauge(data.PauseTotalNs))
+	a.metrics.Store("StackInuse", gauge(data.StackInuse))
+	a.metrics.Store("StackSys", gauge(data.StackSys))
+	a.metrics.Store("Sys", gauge(data.Sys))
+	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
 	a.metrics.Store("RandomValue", gauge(rand.Float64()))
 
 	log.Println("successfully collected runtime metrics")
