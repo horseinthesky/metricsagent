@@ -9,6 +9,13 @@ import (
 	"runtime"
 	"sync"
 	"time"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/mem"
+)
+
+const (
+	CPUPollTime = 10 * time.Second
 )
 
 type gauge = float64
@@ -53,26 +60,33 @@ func New(cfg *Config) *Agent {
 }
 
 func (a Agent) Run(ctx context.Context) {
-	data := &runtime.MemStats{}
+	go a.collectRuntimeMetrics(ctx)
+	go a.collectPSUtilMetrics(ctx)
+	go a.SendMetricsJSONBulk(ctx)
 
+	<-ctx.Done()
+	log.Println("shutting down agent")
+}
+
+func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("shutting down agent")
+			log.Println("finished collecting runtime data")
 			return
-		case <-a.ReportTicker.C:
-			a.SendMetricsJSONBulk()
 		case <-a.PollTicker.C:
-			a.PollCounter++
-
-			runtime.ReadMemStats(data)
-
-			a.UpdateMetrics(data)
+			a.updateRuntimeMetrics()
 		}
 	}
 }
 
-func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
+func (a *Agent) updateRuntimeMetrics() {
+	data := &runtime.MemStats{}
+
+	a.PollCounter++
+
+	runtime.ReadMemStats(data)
+
 	a.metrics.Store("Alloc", gauge(data.Alloc))
 	a.metrics.Store("BuckHashSys", gauge(data.BuckHashSys))
 	a.metrics.Store("Frees", gauge(data.Frees))
@@ -101,4 +115,27 @@ func (a *Agent) UpdateMetrics(data *runtime.MemStats) {
 	a.metrics.Store("Sys", gauge(data.Sys))
 	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
 	a.metrics.Store("RandomValue", gauge(rand.Float64()))
+
+	log.Println("successfully collected runtime metrics")
+}
+
+func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("finished collecting psutil data")
+			return
+		case <-a.PollTicker.C:
+			memory, _ := mem.VirtualMemory()
+			a.metrics.Store("TotalMemory", gauge(memory.Total))
+			a.metrics.Store("FreeMemory", gauge(memory.Free))
+
+			cpusUtilization, _ := cpu.Percent(0, true)
+			for i, c := range cpusUtilization {
+				a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
+			}
+
+			log.Println("successfully collected psutil metrics")
+		}
+	}
 }

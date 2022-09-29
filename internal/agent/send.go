@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,43 +10,51 @@ import (
 	"net/http"
 )
 
-func (a *Agent) SendMetricsJSONBulk() {
-	metrics := []Metric{}
+func (a *Agent) SendMetricsJSONBulk(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("finished sending metrics")
+			return
+		case <-a.ReportTicker.C:
+			metrics := []Metric{}
 
-	// Send runtime metrics
-	a.metrics.Range(func(metricName, value interface{}) bool {
-		m, _ := metricName.(string)
-		v, _ := value.(gauge)
+			// Send runtime metrics
+			a.metrics.Range(func(metricName, value interface{}) bool {
+				m, _ := metricName.(string)
+				v, _ := value.(gauge)
 
-		metric := Metric{
-			ID:    m,
-			MType: "gauge",
-			Value: &v,
+				metric := Metric{
+					ID:    m,
+					MType: "gauge",
+					Value: &v,
+				}
+
+				if a.key != "" {
+					a.addHash(&metric)
+				}
+
+				metrics = append(metrics, metric)
+
+				return true
+			})
+
+			// Send poll count
+			metric := Metric{
+				ID:    "PollCount",
+				MType: "counter",
+				Delta: &a.PollCounter,
+			}
+
+			if a.key != "" {
+				a.addHash(&metric)
+			}
+
+			metrics = append(metrics, metric)
+
+			a.sendPostJSONBulk(metrics)
 		}
-
-		if a.key != "" {
-			a.addHash(&metric)
-		}
-
-		metrics = append(metrics, metric)
-
-		return true
-	})
-
-	// Send poll count
-	metric := Metric{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &a.PollCounter,
 	}
-
-	if a.key != "" {
-		a.addHash(&metric)
-	}
-
-	metrics = append(metrics, metric)
-
-	a.sendPostJSONBulk(metrics)
 }
 
 func (a *Agent) SendMetricsJSON() {
