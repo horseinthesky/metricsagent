@@ -53,5 +53,5 @@ func main() {
 	log.Printf("signal received: %v; terminating...\n", sig)
 
 	cancel()
-	time.Sleep(200 * time.Millisecond)
+	agent.Stop()
 }

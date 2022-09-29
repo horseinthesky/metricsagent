@@ -36,6 +36,7 @@ type Agent struct {
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
+	workGroup    sync.WaitGroup
 }
 
 type Metric struct {
@@ -59,20 +60,23 @@ func New(cfg *Config) *Agent {
 	}
 }
 
-func (a Agent) Run(ctx context.Context) {
+func (a *Agent) Run(ctx context.Context) {
 	go a.collectRuntimeMetrics(ctx)
 	go a.collectPSUtilMetrics(ctx)
 	go a.SendMetricsJSONBulk(ctx)
 
 	<-ctx.Done()
-	log.Println("shutting down agent")
+	log.Println("shutting down...")
 }
 
 func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
+	a.workGroup.Add(1)
+
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("finished collecting runtime data")
+			log.Println("runtime data collection cancelled")
+			a.workGroup.Done()
 			return
 		case <-a.PollTicker.C:
 			a.updateRuntimeMetrics()
@@ -120,10 +124,13 @@ func (a *Agent) updateRuntimeMetrics() {
 }
 
 func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
+	a.workGroup.Add(1)
+
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("finished collecting psutil data")
+			log.Println("psutil data collection cancelled")
+			a.workGroup.Done()
 			return
 		case <-a.PollTicker.C:
 			memory, _ := mem.VirtualMemory()
@@ -138,4 +145,9 @@ func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
 			log.Println("successfully collected psutil metrics")
 		}
 	}
+}
+
+func (a *Agent) Stop() {
+	a.workGroup.Wait()
+	log.Println("successfully shut down")
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -24,9 +25,10 @@ type Config struct {
 
 type Server struct {
 	*chi.Mux
-	config   *Config
-	db       storage.Storage
-	backuper *Backuper
+	config    *Config
+	db        storage.Storage
+	backuper  *Backuper
+	workGroup sync.WaitGroup
 }
 
 func New(config *Config) *Server {
@@ -45,7 +47,7 @@ func New(config *Config) *Server {
 	backuper := NewBackuper(config.StoreFile)
 
 	// Server
-	server := &Server{r, config, db, backuper}
+	server := &Server{r, config, db, backuper, sync.WaitGroup{}}
 	server.setupRouter()
 
 	return server
@@ -106,12 +108,19 @@ func (s *Server) Run(ctx context.Context) {
 }
 
 func (s *Server) Stop() {
+	log.Println("shutting down...")
+
 	s.db.Close()
 	log.Println("connection to database closed")
+
+	s.workGroup.Wait()
+	log.Println("successfully shut down")
 }
 
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	log.Println("pediodic metrics backup started")
+
+	s.workGroup.Add(1)
 
 	ticker := time.NewTicker(s.config.StoreInterval)
 
@@ -121,6 +130,7 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 			s.dump()
 		case <-ctx.Done():
 			log.Println("metrics backup canceled")
+			s.workGroup.Done()
 			return
 		}
 	}
