@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func (a Agent) addHash(metric *Metric) {
+func (a *Agent) addHash(metric *Metric) {
 	var data string
 
 	h := hmac.New(sha256.New, []byte(a.key))

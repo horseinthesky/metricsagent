@@ -9,7 +9,7 @@ import (
 )
 
 
-func (s Server) generateHash(metric storage.Metric) []byte {
+func (s *Server) generateHash(metric storage.Metric) []byte {
 	hash := hmac.New(sha256.New, []byte(s.config.Key))
 
 	var data string
