@@ -54,7 +54,6 @@ func main() {
 	sig := <-term
 	log.Printf("signal received: %v; terminating...\n", sig)
 
-	metricsServer.Stop()
 	cancel()
-	time.Sleep(200 * time.Millisecond)
+	metricsServer.Stop()
 }
