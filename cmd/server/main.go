@@ -48,7 +48,7 @@ func main() {
 	go metricsServer.Run(ctx)
 
 	// Handle graceful shutdown
-	term := make(chan os.Signal)
+	term := make(chan os.Signal, 1)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	sig := <-term
