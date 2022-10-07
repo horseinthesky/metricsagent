@@ -61,22 +61,29 @@ func New(cfg *Config) *Agent {
 }
 
 func (a *Agent) Run(ctx context.Context) {
-	go a.collectRuntimeMetrics(ctx)
-	go a.collectPSUtilMetrics(ctx)
-	go a.SendMetricsJSONBulk(ctx)
+	a.workGroup.Add(3)
+	go func() {
+		defer a.workGroup.Done()
+		a.collectRuntimeMetrics(ctx)
+	}()
+	go func() {
+		defer a.workGroup.Done()
+		a.collectPSUtilMetrics(ctx)
+	}()
+	go func() {
+		defer a.workGroup.Done()
+		a.SendMetricsJSONBulk(ctx)
+	}()
 
 	<-ctx.Done()
 	log.Println("shutting down...")
 }
 
 func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
-	a.workGroup.Add(1)
-
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("runtime data collection cancelled")
-			a.workGroup.Done()
 			return
 		case <-a.PollTicker.C:
 			a.updateRuntimeMetrics()
@@ -124,13 +131,10 @@ func (a *Agent) updateRuntimeMetrics() {
 }
 
 func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
-	a.workGroup.Add(1)
-
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("psutil data collection cancelled")
-			a.workGroup.Done()
 			return
 		case <-a.PollTicker.C:
 			memory, _ := mem.VirtualMemory()

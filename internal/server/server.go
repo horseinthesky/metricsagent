@@ -95,7 +95,11 @@ func (s *Server) Run(ctx context.Context) {
 
 		// Backup metrics periodically
 		if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
-			go s.startPeriodicMetricsDump(ctx)
+			s.workGroup.Add(1)
+			go func() {
+				defer s.workGroup.Done()
+				s.startPeriodicMetricsDump(ctx)
+			}()
 		}
 	}
 
@@ -120,8 +124,6 @@ func (s *Server) Stop() {
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	log.Println("pediodic metrics backup started")
 
-	s.workGroup.Add(1)
-
 	ticker := time.NewTicker(s.config.StoreInterval)
 
 	for {
@@ -130,7 +132,6 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 			s.dump()
 		case <-ctx.Done():
 			log.Println("metrics backup canceled")
-			s.workGroup.Done()
 			return
 		}
 	}
