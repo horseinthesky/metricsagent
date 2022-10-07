@@ -11,13 +11,10 @@ import (
 )
 
 func (a *Agent) SendMetricsJSONBulk(ctx context.Context) {
-	a.workGroup.Add(1)
-
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("sending metrics cancelled")
-			a.workGroup.Done()
 			return
 		case <-a.ReportTicker.C:
 			metrics := []Metric{}
