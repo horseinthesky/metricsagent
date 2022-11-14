@@ -12,6 +12,7 @@ const (
 	defaultAddress        = "localhost:8080"
 	defaultReportInterval = 10 * time.Second
 	defaultPollInterval   = 2 * time.Second
+	defaultPprofAddress   = "localhost:9000"
 )
 
 type Config struct {
@@ -28,7 +29,7 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.Address, "a", defaultAddress, "Address for sending data to")
 	flag.DurationVar(&cfg.ReportInterval, "r", defaultReportInterval, "Metric report to server interval")
 	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
-	flag.StringVar(&cfg.Pprof, "P", cfg.Pprof, "Pprof address")
+	flag.StringVar(&cfg.Pprof, "P", defaultPprofAddress, "Pprof address")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.Parse()
 
