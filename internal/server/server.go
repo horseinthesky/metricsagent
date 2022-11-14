@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -14,24 +13,15 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
-type Config struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
-	Key           string        `env:"KEY"`
-	DatabaseDSN   string        `env:"DATABASE_DSN"`
-}
-
 type Server struct {
 	*chi.Mux
-	config    *Config
+	config    Config
 	db        storage.Storage
 	backuper  *Backuper
 	workGroup sync.WaitGroup
 }
 
-func New(config *Config) *Server {
+func New(config Config) *Server {
 	// Router
 	r := chi.NewRouter()
 
@@ -108,7 +98,7 @@ func (s *Server) Run(ctx context.Context) {
 		log.Fatalf("failed to init db: %s", err)
 	}
 
-	log.Println(fmt.Errorf("server crashed due to %w", http.ListenAndServe(s.config.Address, s)))
+	log.Fatalf("server crashed due to %s", http.ListenAndServe(s.config.Address, s))
 }
 
 func (s *Server) Stop() {

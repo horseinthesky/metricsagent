@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	_ "net/http/pprof"
 	"runtime"
 	"sync"
 	"time"
@@ -21,17 +22,11 @@ const (
 type gauge = float64
 type counter = int64
 
-type Config struct {
-	Address        string        `env:"ADDRESS"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	Key            string        `env:"KEY"`
-}
-
 type Agent struct {
 	PollTicker   *time.Ticker
 	ReportTicker *time.Ticker
 	PollCounter  int64
+	pprofServer  *http.Server
 	key          string
 	metrics      *sync.Map
 	upstream     string
@@ -47,10 +42,11 @@ type Metric struct {
 	Hash  string `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func New(cfg *Config) *Agent {
+func New(cfg Config) *Agent {
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
+		pprofServer:  &http.Server{Addr: cfg.Pprof},
 		key:          cfg.Key,
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", cfg.Address),
@@ -61,7 +57,11 @@ func New(cfg *Config) *Agent {
 }
 
 func (a *Agent) Run(ctx context.Context) {
-	a.workGroup.Add(3)
+	a.workGroup.Add(4)
+	go func() {
+		defer a.workGroup.Done()
+		a.pprofServer.ListenAndServe()
+	}()
 	go func() {
 		defer a.workGroup.Done()
 		a.collectRuntimeMetrics(ctx)
@@ -77,6 +77,7 @@ func (a *Agent) Run(ctx context.Context) {
 
 	<-ctx.Done()
 	log.Println("shutting down...")
+	a.pprofServer.Shutdown(ctx)
 }
 
 func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
