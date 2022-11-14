@@ -16,28 +16,28 @@ const (
 )
 
 type Config struct {
-	Address       string        `env:"ADDRESS" envDefault:"localhost:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
-	StoreFile     string        `env:"STORE_FILE" envDefault:"/tmp/devops-metrics-db.json"`
-	Restore       bool          `env:"RESTORE" envDefault:"true"`
+	Address       string        `env:"ADDRESS"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL"`
+	StoreFile     string        `env:"STORE_FILE"`
+	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
 func ParseConfig() (Config, error) {
 	cfg := Config{}
-	if err := env.Parse(&cfg); err != nil {
-		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
-	}
 
-	flag.StringVar(&cfg.Address, "a", cfg.Address, "Socket to listen on")
-	flag.BoolVar(&cfg.Restore, "r", cfg.Restore, "If should restore metrics on startup")
-	flag.DurationVar(&cfg.StoreInterval, "i", cfg.StoreInterval, "backup interval (seconds)")
-	flag.StringVar(&cfg.StoreFile, "f", cfg.StoreFile, "Metrics backup file path")
+	flag.StringVar(&cfg.Address, "a", defaultListenOn, "Socket to listen on")
+	flag.BoolVar(&cfg.Restore, "r", defaultRestoreFlag, "If should restore metrics on startup")
+	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
+	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
 	flag.Parse()
 
+	if err := env.Parse(&cfg); err != nil {
+		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
+	}
+
 	return cfg, nil
 }
-
