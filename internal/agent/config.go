@@ -8,6 +8,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Agent default config options.
 const (
 	defaultAddress        = "localhost:8080"
 	defaultReportInterval = 10 * time.Second
@@ -15,6 +16,7 @@ const (
 	defaultPprofAddress   = "localhost:9000"
 )
 
+// Agent Config description.
 type Config struct {
 	Address        string        `env:"ADDRESS"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
@@ -23,6 +25,9 @@ type Config struct {
 	Key            string        `env:"KEY"`
 }
 
+// ParseConfig parses the configuration options.
+// Env variables override flag values.
+// Default values are used if nothing mentioned above provided.
 func ParseConfig() (Config, error) {
 	cfg := Config{}
 

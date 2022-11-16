@@ -10,7 +10,17 @@ import (
 	"net/http"
 )
 
-func (a *Agent) SendMetricsJSONBulk(ctx context.Context) {
+// Metrics is an object to marshal metrics to.
+type Metric struct {
+	ID    string `json:"id"`              // metric name
+	MType string `json:"type"`            // metric type, gauge/counter
+	Delta *int64 `json:"delta,omitempty"` // metric value if it has a type of counter
+	Value *gauge `json:"value,omitempty"` // metric value if it has a type of gauge
+	Hash  string `json:"hash,omitempty"`  // hash value
+}
+
+// sendMetricsJSONBulk sends all metrics as one big JSON.
+func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -57,7 +67,8 @@ func (a *Agent) SendMetricsJSONBulk(ctx context.Context) {
 	}
 }
 
-func (a *Agent) SendMetricsJSON() {
+// sendMetricsJSON sends metrics as JSON by one at a time.
+func (a *Agent) sendMetricsJSON() {
 	// Send runtime metrics
 	a.metrics.Range(func(metricName, value interface{}) bool {
 		m, _ := metricName.(string)
@@ -91,7 +102,8 @@ func (a *Agent) SendMetricsJSON() {
 	a.sendPostJSON(metric)
 }
 
-func (a *Agent) SendMetricsPlain() {
+// sendMetricsPlain sends metrics by one at a time as URL params.
+func (a *Agent) sendMetricsPlain() {
 	// Send metrics
 	a.metrics.Range(func(metricName, value interface{}) bool {
 		endpoint := fmt.Sprintf("%s/update/%s/%s/%v", a.upstream, "gauge", metricName, value)
@@ -104,6 +116,7 @@ func (a *Agent) SendMetricsPlain() {
 	a.sendPostPlain(endpoint)
 }
 
+// sendPostPlain serves as a HTTP helper for sendMetricsPlain.
 func (a *Agent) sendPostPlain(url string) {
 	request, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
@@ -128,6 +141,7 @@ func (a *Agent) sendPostPlain(url string) {
 	log.Printf("Code: %v: %s", response.Status, string(body))
 }
 
+// sendPostJSON serves as a HTTP helper for sendMetricsJSON.
 func (a *Agent) sendPostJSON(metric Metric) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(metric)
@@ -156,6 +170,7 @@ func (a *Agent) sendPostJSON(metric Metric) {
 	log.Printf("Code: %v: %s", response.Status, string(body))
 }
 
+// sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.
 func (a *Agent) sendPostJSONBulk(metrics []Metric) {
 	payloadBuf := new(bytes.Buffer)
 	json.NewEncoder(payloadBuf).Encode(metrics)

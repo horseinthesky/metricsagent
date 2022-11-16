@@ -1,27 +1,24 @@
+// Package agent describes metrics agent internals.
+//
+// It consists of the following parts:
+//  - main.go - agent struct and its lifecycle methods
+//  - config.go - agent configuration options
+//  - collect.go - agent metrics and collect methods
+//  - secure.go - agent metrics hash protection
+//  - send.go - agent metrics send methods
 package agent
 
 import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"net/http"
 	_ "net/http/pprof"
-	"runtime"
 	"sync"
 	"time"
-
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/mem"
 )
 
-const (
-	CPUPollTime = 10 * time.Second
-)
-
-type gauge = float64
-type counter = int64
-
+// Agent description.
 type Agent struct {
 	PollTicker   *time.Ticker
 	ReportTicker *time.Ticker
@@ -34,14 +31,8 @@ type Agent struct {
 	workGroup    sync.WaitGroup
 }
 
-type Metric struct {
-	ID    string `json:"id"`              // имя метрики
-	MType string `json:"type"`            // параметр, принимающий значение gauge или counter
-	Delta *int64 `json:"delta,omitempty"` // значение метрики в случае передачи counter
-	Value *gauge `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	Hash  string `json:"hash,omitempty"`  // значение хеш-функции
-}
-
+// Agent constructor.
+// Sets things up.
 func New(cfg Config) *Agent {
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
@@ -56,6 +47,8 @@ func New(cfg Config) *Agent {
 	}
 }
 
+// Agent starting point.
+// Runs an agent.
 func (a *Agent) Run(ctx context.Context) {
 	a.workGroup.Add(4)
 	go func() {
@@ -72,7 +65,7 @@ func (a *Agent) Run(ctx context.Context) {
 	}()
 	go func() {
 		defer a.workGroup.Done()
-		a.SendMetricsJSONBulk(ctx)
+		a.sendMetricsJSONBulk(ctx)
 	}()
 
 	<-ctx.Done()
@@ -80,78 +73,8 @@ func (a *Agent) Run(ctx context.Context) {
 	a.pprofServer.Shutdown(ctx)
 }
 
-func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Println("runtime data collection cancelled")
-			return
-		case <-a.PollTicker.C:
-			a.updateRuntimeMetrics()
-		}
-	}
-}
-
-func (a *Agent) updateRuntimeMetrics() {
-	data := &runtime.MemStats{}
-
-	a.PollCounter++
-
-	runtime.ReadMemStats(data)
-
-	a.metrics.Store("Alloc", gauge(data.Alloc))
-	a.metrics.Store("BuckHashSys", gauge(data.BuckHashSys))
-	a.metrics.Store("Frees", gauge(data.Frees))
-	a.metrics.Store("GCCPUFraction", gauge(data.GCCPUFraction))
-	a.metrics.Store("GCSys", gauge(data.GCSys))
-	a.metrics.Store("HeapAlloc", gauge(data.HeapAlloc))
-	a.metrics.Store("HeapIdle", gauge(data.HeapIdle))
-	a.metrics.Store("HeapInuse", gauge(data.HeapInuse))
-	a.metrics.Store("HeapObjects", gauge(data.HeapObjects))
-	a.metrics.Store("HeapReleased", gauge(data.HeapReleased))
-	a.metrics.Store("HeapSys", gauge(data.HeapSys))
-	a.metrics.Store("LastGC", gauge(data.LastGC))
-	a.metrics.Store("Lookups", gauge(data.Lookups))
-	a.metrics.Store("MCacheInuse", gauge(data.MCacheInuse))
-	a.metrics.Store("MCacheSys", gauge(data.MCacheSys))
-	a.metrics.Store("MSpanInuse", gauge(data.MSpanInuse))
-	a.metrics.Store("MSpanSys", gauge(data.MSpanSys))
-	a.metrics.Store("Mallocs", gauge(data.Mallocs))
-	a.metrics.Store("NextGC", gauge(data.NextGC))
-	a.metrics.Store("NumForcedGC", gauge(data.NumForcedGC))
-	a.metrics.Store("NumGC", gauge(data.NumGC))
-	a.metrics.Store("OtherSys", gauge(data.OtherSys))
-	a.metrics.Store("PauseTotalNs", gauge(data.PauseTotalNs))
-	a.metrics.Store("StackInuse", gauge(data.StackInuse))
-	a.metrics.Store("StackSys", gauge(data.StackSys))
-	a.metrics.Store("Sys", gauge(data.Sys))
-	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
-	a.metrics.Store("RandomValue", gauge(rand.Float64()))
-
-	log.Println("successfully collected runtime metrics")
-}
-
-func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Println("psutil data collection cancelled")
-			return
-		case <-a.PollTicker.C:
-			memory, _ := mem.VirtualMemory()
-			a.metrics.Store("TotalMemory", gauge(memory.Total))
-			a.metrics.Store("FreeMemory", gauge(memory.Free))
-
-			cpusUtilization, _ := cpu.Percent(0, true)
-			for i, c := range cpusUtilization {
-				a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
-			}
-
-			log.Println("successfully collected psutil metrics")
-		}
-	}
-}
-
+// Agent graceful shutdown method.
+// Ensures everything is stopped as expected.
 func (a *Agent) Stop() {
 	a.workGroup.Wait()
 	log.Println("successfully shut down")

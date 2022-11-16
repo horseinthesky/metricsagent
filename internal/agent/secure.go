@@ -7,6 +7,8 @@ import (
 	"fmt"
 )
 
+// Agent hash protection method.
+// Metrics are protected only if hash key is provided.
 func (a *Agent) addHash(metric *Metric) {
 	var data string
 
