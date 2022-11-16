@@ -13,11 +13,55 @@ import (
 
 // Agent custom metric types
 type (
-	gauge = float64
+	gauge   = float64
 	counter = int64
 )
 
-// updateRuntimeMetrics updates agent internal metrics storage.
+// collectPSUtilMetrics runs updatePSUtilMetrics every config.PollInterval.
+// Also handles graceful shutdown.
+func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("psutil data collection cancelled")
+			return
+		case <-a.PollTicker.C:
+			a.updatePSUtilMetrics()
+
+			log.Println("successfully collected psutil metrics")
+		}
+	}
+}
+
+// collectRuntimeMetrics runs updateRuntimeMetrics every config.PollInterval.
+// Also handles graceful shutdown.
+func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("runtime data collection cancelled")
+			return
+		case <-a.PollTicker.C:
+			a.updateRuntimeMetrics()
+
+			log.Println("successfully collected runtime metrics")
+		}
+	}
+}
+
+// updatePSUtilMetrics updates psutil metrics.
+func (a *Agent) updatePSUtilMetrics() {
+	memory, _ := mem.VirtualMemory()
+	a.metrics.Store("TotalMemory", gauge(memory.Total))
+	a.metrics.Store("FreeMemory", gauge(memory.Free))
+
+	cpusUtilization, _ := cpu.Percent(0, true)
+	for i, c := range cpusUtilization {
+		a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
+	}
+}
+
+// updateRuntimeMetrics updates runtime metrics.
 func (a *Agent) updateRuntimeMetrics() {
 	data := &runtime.MemStats{}
 
@@ -53,45 +97,4 @@ func (a *Agent) updateRuntimeMetrics() {
 	a.metrics.Store("Sys", gauge(data.Sys))
 	a.metrics.Store("TotalAlloc", gauge(data.TotalAlloc))
 	a.metrics.Store("RandomValue", gauge(rand.Float64()))
-
-	log.Println("successfully collected runtime metrics")
-}
-
-// collectPSUtilMetrics collects psutil metrics.
-// Uses config PollInterval periods to run.
-// Also handles graceful shutdown.
-func (a *Agent) collectPSUtilMetrics(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Println("psutil data collection cancelled")
-			return
-		case <-a.PollTicker.C:
-			memory, _ := mem.VirtualMemory()
-			a.metrics.Store("TotalMemory", gauge(memory.Total))
-			a.metrics.Store("FreeMemory", gauge(memory.Free))
-
-			cpusUtilization, _ := cpu.Percent(0, true)
-			for i, c := range cpusUtilization {
-				a.metrics.Store(fmt.Sprintf("CPUutilization%d", i), gauge(c))
-			}
-
-			log.Println("successfully collected psutil metrics")
-		}
-	}
-}
-
-// collectRuntimeMetrics runs updateRuntimeMetrics method.
-// Uses config PollInterval periods to run.
-// Also handles graceful shutdown.
-func (a *Agent) collectRuntimeMetrics(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			log.Println("runtime data collection cancelled")
-			return
-		case <-a.PollTicker.C:
-			a.updateRuntimeMetrics()
-		}
-	}
 }

@@ -33,7 +33,7 @@ type Agent struct {
 
 // Agent constructor.
 // Sets things up.
-func New(cfg Config) *Agent {
+func NewAgent(cfg Config) *Agent {
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),

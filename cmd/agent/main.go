@@ -18,7 +18,7 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to parse agent config: %w", err))
 	}
 
-	agent := agent.New(cfg)
+	agent := agent.NewAgent(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go agent.Run(ctx)
