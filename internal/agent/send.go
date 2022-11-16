@@ -73,6 +73,33 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 	}
 }
 
+// sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.
+func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, string, error) {
+	payloadBuf := new(bytes.Buffer)
+	json.NewEncoder(payloadBuf).Encode(metrics)
+
+	endpoint := fmt.Sprintf("%s/updates/", a.upstream)
+	request, err := http.NewRequest(http.MethodPost, endpoint, payloadBuf)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to build a request: %w", err)
+	}
+	request.Header.Add("Content-Type", "application/json")
+	request = request.WithContext(ctx)
+
+	response, err := a.client.Do(request)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to make a request: %w", err)
+	}
+
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to read response body: %w", err)
+	}
+	defer response.Body.Close()
+
+	return response.StatusCode, string(body), nil
+}
+
 // // sendMetricsJSON sends metrics as JSON by one at a time.
 // func (a *Agent) sendMetricsJSON() {
 // 	// Send runtime metrics
@@ -175,30 +202,3 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 //
 // 	log.Printf("Code: %v: %s", response.Status, string(body))
 // }
-
-// sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.
-func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, string, error) {
-	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(metrics)
-
-	endpoint := fmt.Sprintf("%s/updates/", a.upstream)
-	request, err := http.NewRequest(http.MethodPost, endpoint, payloadBuf)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to build a request: %w", err)
-	}
-	request.Header.Add("Content-Type", "application/json")
-	request = request.WithContext(ctx)
-
-	response, err := a.client.Do(request)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to make a request: %w", err)
-	}
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, "", fmt.Errorf("failed to read response body: %w", err)
-	}
-	defer response.Body.Close()
-
-	return response.StatusCode, string(body), nil
-}

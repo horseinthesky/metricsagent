@@ -11,15 +11,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type RoundTripFunc func(req *http.Request) *http.Response
+type roundTripFunc func(req *http.Request) *http.Response
 
-func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req), nil
 }
 
-func NewTestClient(fn RoundTripFunc) *http.Client {
+func NewTestClient(fn roundTripFunc) *http.Client {
 	return &http.Client{
-		Transport: RoundTripFunc(fn),
+		Transport: roundTripFunc(fn),
 	}
 }
 
@@ -30,20 +30,13 @@ func TestSendMetricsJSONBulk(t *testing.T) {
 	})
 	agent.client = NewTestClient(func(req *http.Request) *http.Response {
 		return &http.Response{
-			StatusCode: http.StatusCreated,
-			Body:       io.NopCloser(strings.NewReader(`{"error":"Character not found"}`)),
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(`{"test": "passed"}`)),
 		}
 	})
 
-	testValue := counter(15)
-	metrics := []Metric{{
-		ID:    "TestCounter",
-		MType: "counter",
-		Delta: &testValue,
-	}}
-
-	code, body, err := agent.sendPostJSONBulk(context.Background(), metrics)
+	code, body, err := agent.sendPostJSONBulk(context.Background(), []Metric{{}})
 	assert.NoError(t, err)
-	assert.Equal(t, 201, code)
-	assert.NotEqual(t, "", body)
+	assert.Equal(t, http.StatusOK, code)
+	assert.Equal(t, `{"test": "passed"}`, body)
 }
