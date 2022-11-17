@@ -21,7 +21,7 @@ type Server struct {
 	workGroup sync.WaitGroup
 }
 
-func New(config Config) *Server {
+func NewServer(config Config) *Server {
 	// Router
 	r := chi.NewRouter()
 
