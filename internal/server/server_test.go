@@ -38,12 +38,11 @@ func TestRouter(t *testing.T) {
 	defer ts.Close()
 
 	// test no route
-	resp, payload := testRequest(t, ts, "GET", "/notexists", "")
+	resp, _ := testRequest(t, ts, "GET", "/notexists", "")
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	assert.Equal(t, "404 page not found\n", payload)
 
 	// test ping db
-	resp, payload = testRequest(t, ts, "GET", "/ping", "")
+	resp, payload := testRequest(t, ts, "GET", "/ping", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, http.StatusText(http.StatusOK), payload)
 
@@ -53,29 +52,24 @@ func TestRouter(t *testing.T) {
 	assert.Equal(t, http.StatusText(http.StatusNotImplemented), payload)
 
 	// test save valid metric counter
-	resp, payload = testRequest(t, ts, "POST", "/update/counter/testCounter/100", "")
+	resp, _ = testRequest(t, ts, "POST", "/update/counter/testCounter/100", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "Success: metric stored\n", payload)
 
 	// test save valid metric gauge
-	resp, payload = testRequest(t, ts, "POST", "/update/gauge/testGauge/10.0", "")
+	resp, _ = testRequest(t, ts, "POST", "/update/gauge/testGauge/10.0", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "Success: metric stored\n", payload)
 
 	// test save unsupported metric type JSON
-	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "unsupported", "value": 1}`)
+	resp, _ = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "unsupported", "value": 1}`)
 	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", payload)
 
 	// test save valid metric counter JSON
-	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONCounter", "type": "counter", "delta": 110}`)
+	resp, _ = testRequest(t, ts, "POST", "/update", `{"id": "testJSONCounter", "type": "counter", "delta": 110}`)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test save valid metric gauge JSON
-	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "gauge", "value": 11.0}`)
+	resp, _ = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "gauge", "value": 11.0}`)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test save unsupported JSON metrics
 	unsupportedMetrics := `
@@ -92,9 +86,8 @@ func TestRouter(t *testing.T) {
 		  }
 		]
 	`
-	resp, payload = testRequest(t, ts, "POST", "/updates/", unsupportedMetrics)
+	resp, _ = testRequest(t, ts, "POST", "/updates/", unsupportedMetrics)
 	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", payload)
 
 	// test save valid JSON metrics
 	metrics := `
@@ -111,9 +104,8 @@ func TestRouter(t *testing.T) {
 		  }
 		]
 	`
-	resp, payload = testRequest(t, ts, "POST", "/updates/", metrics)
+	resp, _ = testRequest(t, ts, "POST", "/updates/", metrics)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test get counter plain
 	resp, payload = testRequest(t, ts, "GET", "/value/counter/testCounter", "")
@@ -137,12 +129,12 @@ func TestRouter(t *testing.T) {
 	assert.Equal(t, `{"id":"testJSONGauge","type":"gauge","value":11}`, payload)
 
 	// test get not existing gauge JSON
-	notExistingJsonMetric := `
+	notExistingJSONMetric := `
 		{
 		  "id": "testNotExistingJSON",
 		  "type": "gauge"
 		}
 	`
-	resp, _ = testRequest(t, ts, "POST", "/value/", notExistingJsonMetric)
+	resp, _ = testRequest(t, ts, "POST", "/value/", notExistingJSONMetric)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
