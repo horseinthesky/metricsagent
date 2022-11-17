@@ -38,44 +38,44 @@ func TestRouter(t *testing.T) {
 	defer ts.Close()
 
 	// test no route
-	resp, body := testRequest(t, ts, "GET", "/notexists", "")
+	resp, payload := testRequest(t, ts, "GET", "/notexists", "")
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	assert.Equal(t, "404 page not found\n", body)
+	assert.Equal(t, "404 page not found\n", payload)
 
 	// test ping db
-	resp, body = testRequest(t, ts, "GET", "/ping", "")
+	resp, payload = testRequest(t, ts, "GET", "/ping", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, http.StatusText(http.StatusOK), body)
+	assert.Equal(t, http.StatusText(http.StatusOK), payload)
 
 	// test save unsupported metric type plain
-	resp, body = testRequest(t, ts, "POST", "/update/unsupported/testUnsupported/100", "")
+	resp, payload = testRequest(t, ts, "POST", "/update/unsupported/testUnsupported/100", "")
 	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	assert.Equal(t, http.StatusText(http.StatusNotImplemented), body)
+	assert.Equal(t, http.StatusText(http.StatusNotImplemented), payload)
 
 	// test save valid metric counter
-	resp, body = testRequest(t, ts, "POST", "/update/counter/testCounter/100", "")
+	resp, payload = testRequest(t, ts, "POST", "/update/counter/testCounter/100", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "Success: metric stored\n", body)
+	assert.Equal(t, "Success: metric stored\n", payload)
 
 	// test save valid metric gauge
-	resp, body = testRequest(t, ts, "POST", "/update/gauge/testGauge/10.0", "")
+	resp, payload = testRequest(t, ts, "POST", "/update/gauge/testGauge/10.0", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "Success: metric stored\n", body)
+	assert.Equal(t, "Success: metric stored\n", payload)
 
 	// test save unsupported metric type JSON
-	resp, body = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "unsupported", "value": 1}`)
+	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "unsupported", "value": 1}`)
 	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", body)
+	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", payload)
 
 	// test save valid metric counter JSON
-	resp, body = testRequest(t, ts, "POST", "/update", `{"id": "testJSONCounter", "type": "counter", "delta": 110}`)
+	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONCounter", "type": "counter", "delta": 110}`)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", body)
+	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test save valid metric gauge JSON
-	resp, body = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "gauge", "value": 11.0}`)
+	resp, payload = testRequest(t, ts, "POST", "/update", `{"id": "testJSONGauge", "type": "gauge", "value": 11.0}`)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", body)
+	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test save unsupported JSON metrics
 	unsupportedMetrics := `
@@ -92,9 +92,9 @@ func TestRouter(t *testing.T) {
 		  }
 		]
 	`
-	resp, body = testRequest(t, ts, "POST", "/updates/", unsupportedMetrics)
+	resp, payload = testRequest(t, ts, "POST", "/updates/", unsupportedMetrics)
 	assert.Equal(t, http.StatusNotImplemented, resp.StatusCode)
-	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", body)
+	assert.Equal(t, "{\"error\": \"unsupported metric type\"}\n", payload)
 
 	// test save valid JSON metrics
 	metrics := `
@@ -111,19 +111,19 @@ func TestRouter(t *testing.T) {
 		  }
 		]
 	`
-	resp, body = testRequest(t, ts, "POST", "/updates/", metrics)
+	resp, payload = testRequest(t, ts, "POST", "/updates/", metrics)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "{\"result\": \"metric saved\"}", body)
+	assert.Equal(t, "{\"result\": \"metric saved\"}", payload)
 
 	// test get counter plain
-	resp, body = testRequest(t, ts, "GET", "/value/counter/testCounter", "")
+	resp, payload = testRequest(t, ts, "GET", "/value/counter/testCounter", "")
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "100", body)
+	assert.Equal(t, "100", payload)
 
 	// test get not existing counter plain
-	resp, body = testRequest(t, ts, "GET", "/value/counter/testNotExist", "")
+	resp, payload = testRequest(t, ts, "GET", "/value/counter/testNotExist", "")
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
-	assert.Equal(t, http.StatusText(http.StatusNotFound), body)
+	assert.Equal(t, http.StatusText(http.StatusNotFound), payload)
 
 	// test get gauge JSON
 	jsonMetric := `
@@ -132,9 +132,9 @@ func TestRouter(t *testing.T) {
 		  "type": "gauge"
 		}
 	`
-	resp, body = testRequest(t, ts, "POST", "/value/", jsonMetric)
+	resp, payload = testRequest(t, ts, "POST", "/value/", jsonMetric)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, `{"id":"testJSONGauge","type":"gauge","value":11}`, body)
+	assert.Equal(t, `{"id":"testJSONGauge","type":"gauge","value":11}`, payload)
 
 	// test get not existing gauge JSON
 	notExistingJsonMetric := `
@@ -143,6 +143,6 @@ func TestRouter(t *testing.T) {
 		  "type": "gauge"
 		}
 	`
-	resp, body = testRequest(t, ts, "POST", "/value/", notExistingJsonMetric)
+	resp, _ = testRequest(t, ts, "POST", "/value/", notExistingJsonMetric)
 	assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 }
