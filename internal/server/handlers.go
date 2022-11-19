@@ -250,7 +250,8 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 
 		metric, err := s.db.Get(r.Context(), metricRequest.ID)
 		if err != nil {
-			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"result": "unknown metric id"}`))
 			return
 		}
 

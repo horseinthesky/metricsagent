@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var testServer = NewServer(Config{
+	Restore:       false,
+	StoreInterval: 10 * time.Minute,
+	StoreFile:     "/tmp/test-metrics-db.json",
+})
+
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload string) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer([]byte(payload)))
 	require.NoError(t, err)
@@ -26,44 +32,125 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload
 	return resp.StatusCode, string(respBody)
 }
 
-func TestRouter(t *testing.T) {
+func TestGeneral(t *testing.T) {
 	tests := []struct {
-		name    string
-		method  string
-		path    string
-		payload string
-		expected    int
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
 	}{
 		{
-			name:   "test no route",
-			method: http.MethodGet,
-			path:   "/notexists",
-			expected:   http.StatusNotFound,
+			name:     "test no route",
+			method:   http.MethodGet,
+			path:     "/notexists",
+			expected: http.StatusNotFound,
 		},
 		{
-			name:   "test ping db",
-			method: http.MethodGet,
-			path:   "/ping",
-			expected:   http.StatusOK,
+			name:     "test ping db",
+			method:   http.MethodGet,
+			path:     "/ping",
+			expected: http.StatusOK,
+		},
+	}
+
+	ts := httptest.NewServer(testServer)
+	defer ts.Close()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _ := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
+		})
+	}
+}
+
+func TestTextHandlers(t *testing.T) {
+	saveTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+	}{
+		{
+			name:     "test save unsupported metric type plain",
+			method:   http.MethodPost,
+			path:     "/update/unsupported/testUnsupported/100",
+			expected: http.StatusNotImplemented,
 		},
 		{
-			name:   "test save unsupported metric type plain",
-			method: http.MethodPost,
-			path:   "/update/unsupported/testUnsupported/100",
-			expected:   http.StatusNotImplemented,
+			name:     "test save valid metric counter",
+			method:   http.MethodPost,
+			path:     "/update/counter/testCounter/100",
+			expected: http.StatusOK,
 		},
 		{
-			name:   "test save valid metric counter",
-			method: http.MethodPost,
-			path:   "/update/counter/testCounter/100",
-			expected:   http.StatusOK,
+			name:     "test save valid metric gauge",
+			method:   http.MethodPost,
+			path:     "/update/gauge/testGauge/10.0",
+			expected: http.StatusOK,
+		},
+	}
+
+	loadTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+		body     string
+	}{
+		{
+			name:     "test get not existing counter plain",
+			method:   http.MethodGet,
+			path:     "/value/counter/testNotExists",
+			expected: http.StatusNotFound,
+			body:     http.StatusText(http.StatusNotFound),
 		},
 		{
-			name:   "test save valid metric gauge",
-			method: http.MethodPost,
-			path:   "/update/gauge/testGauge/10.0",
-			expected:   http.StatusOK,
+			name:     "test get counter plain",
+			method:   http.MethodGet,
+			path:     "/value/counter/testCounter",
+			expected: http.StatusOK,
+			body:     "100",
 		},
+		{
+			name:     "test get gauge plain",
+			method:   http.MethodGet,
+			path:     "/value/gauge/testGauge",
+			expected: http.StatusOK,
+			body:     "10",
+		},
+	}
+
+	ts := httptest.NewServer(testServer)
+	defer ts.Close()
+
+	for _, tt := range saveTests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _ := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
+		})
+	}
+
+	for _, tt := range loadTests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, body := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
+			require.Equal(t, tt.body, body)
+		})
+	}
+}
+
+func TestJSONHandlers(t *testing.T) {
+	saveTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+	}{
 		{
 			name:   "test save unsupported metric type JSON",
 			method: http.MethodPost,
@@ -133,18 +220,16 @@ func TestRouter(t *testing.T) {
 			]`,
 			expected: http.StatusOK,
 		},
-		{
-			name:   "test get not existing counter plain",
-			method: http.MethodGet,
-			path:   "/value/counter/testNotExist",
-			expected:   http.StatusNotFound,
-		},
-		{
-			name:   "test get counter plain",
-			method: http.MethodGet,
-			path:   "/value/counter/testCounter",
-			expected:   http.StatusOK,
-		},
+	}
+
+	loadTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+		body     string
+	}{
 		{
 			name:   "test get not existing gauge JSON",
 			method: http.MethodPost,
@@ -156,6 +241,20 @@ func TestRouter(t *testing.T) {
 				}
 			`,
 			expected: http.StatusNotFound,
+			body:     `{"result": "unknown metric id"}`,
+		},
+		{
+			name:   "test get counter JSON",
+			method: http.MethodPost,
+			path:   "/value/",
+			payload: `
+				{
+					"id": "testJSONCounter",
+					"type": "counter"
+				}
+			`,
+			expected: http.StatusOK,
+			body: `{"id":"testJSONCounter","type":"counter","delta":110}`,
 		},
 		{
 			name:   "test get gauge JSON",
@@ -168,22 +267,25 @@ func TestRouter(t *testing.T) {
 				}
 			`,
 			expected: http.StatusOK,
+			body: `{"id":"testJSONGauge","type":"gauge","value":11}`,
 		},
 	}
-
-	testServer := NewServer(Config{
-		Restore:       false,
-		StoreInterval: 10 * time.Minute,
-		StoreFile:     "/tmp/test-metrics-db.json",
-	})
 
 	ts := httptest.NewServer(testServer)
 	defer ts.Close()
 
-	for _, tt := range tests {
+	for _, tt := range saveTests {
 		t.Run(tt.name, func(t *testing.T) {
 			code, _ := testRequest(t, ts, tt.method, tt.path, tt.payload)
 			require.Equal(t, tt.expected, code)
+		})
+	}
+
+	for _, tt := range loadTests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, body := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
+			require.Equal(t, tt.body, body)
 		})
 	}
 }
