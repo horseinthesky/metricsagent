@@ -1,3 +1,12 @@
+// Package server describes metrics server  internals.
+//
+// It consists of the following parts:
+//  - server.go - server struct and its lifecycle methods
+//  - config.go - server configuration options
+//  - backup.go - server periodic backup methods
+//  - secure.go - server metrics hash protection
+//  - middleware.go - server middleware
+//  - handlers.go - server HTTP router endpoints buciness logic
 package server
 
 import (
@@ -13,6 +22,7 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
+// Server main struct.
 type Server struct {
 	*chi.Mux
 	config    Config
@@ -21,11 +31,11 @@ type Server struct {
 	workGroup sync.WaitGroup
 }
 
+// Server constructor.
+// Sets things up.
 func NewServer(config Config) *Server {
-	// Router
 	r := chi.NewRouter()
 
-	// Storage
 	var db storage.Storage
 	if config.DatabaseDSN != "" {
 		db = storage.NewDBStorage(config.DatabaseDSN)
@@ -33,18 +43,17 @@ func NewServer(config Config) *Server {
 		db = storage.NewMemoryStorage()
 	}
 
-	// Backuper
 	backuper := NewBackuper(config.StoreFile)
 
-	// Server
 	server := &Server{r, config, db, backuper, sync.WaitGroup{}}
 	server.setupRouter()
 
 	return server
 }
 
+// setupRouter builds Server's HTTP router.
+// Assembles middleware and handlers.
 func (s *Server) setupRouter() {
-	// Middleware
 	s.Use(logRequest)
 	s.Use(handleGzip)
 	s.Use(middleware.RequestID)
@@ -52,7 +61,6 @@ func (s *Server) setupRouter() {
 	s.Use(middleware.Logger)
 	s.Use(middleware.Recoverer)
 
-	// Handlers
 	s.Route("/update", func(r chi.Router) {
 		r.Route("/{metricType}", func(r chi.Router) {
 			r.Use(dropUnsupportedTextType)
@@ -76,6 +84,8 @@ func (s *Server) setupRouter() {
 	s.Get("/ping", s.handlePingDB())
 }
 
+// Run is a Server entry point.
+// It starts DB, HTTP router and periodic metrics backup.
 func (s *Server) Run(ctx context.Context) {
 	if s.config.DatabaseDSN == "" {
 		// Restore metrics from backup
@@ -101,6 +111,8 @@ func (s *Server) Run(ctx context.Context) {
 	log.Fatalf("server crashed due to %s", http.ListenAndServe(s.config.Address, s))
 }
 
+// Stop is a Server graceful shutdown method.
+// Ensures everything is stopped as expected.
 func (s *Server) Stop() {
 	log.Println("shutting down...")
 
@@ -111,6 +123,9 @@ func (s *Server) Stop() {
 	log.Println("successfully shut down")
 }
 
+// startPeriodicMetricsDump handles Server periodic metrics backup to file.
+// Only used with memory DB to provide persistent metrics storage
+// between Server restart.
 func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	log.Println("pediodic metrics backup started")
 
@@ -127,6 +142,10 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 	}
 }
 
+// saveMetric handles synchronous metric backup.
+// Only used by handleSaveJSONMetric handler when
+//  - in-memory storage is in use
+//  - no StoreInterval provided
 func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.db.Set(metric)
 
@@ -139,6 +158,10 @@ func (s *Server) saveMetric(metric storage.Metric) error {
 	return err
 }
 
+// saveMetricBulk handles synchronous bulk metric backup.
+// Only used by handleSaveJSONMetrics handler when
+//  - in-memory storage is in use
+//  - no StoreInterval provided
 func (s *Server) saveMetricsBulk(metrics []storage.Metric) error {
 	err := s.db.SetBulk(metrics)
 

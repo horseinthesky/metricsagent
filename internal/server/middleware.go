@@ -13,15 +13,18 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
+// gzipWriter provides compression interface for middleware.
 type gzipWriter struct {
 	http.ResponseWriter
 	Writer io.Writer
 }
 
+// Write writes compressed bytes to HTTP writer.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// handleGzip provides gzip compression.
 func handleGzip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
@@ -41,6 +44,14 @@ func handleGzip(next http.Handler) http.Handler {
 	})
 }
 
+// logRequest logs some HTTP request data.
+// Stores:
+//  - method
+//  - client address
+//  - headers
+//  - URL path
+//  - body
+//  - headers
 func logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
@@ -66,6 +77,9 @@ func logRequest(next http.Handler) http.Handler {
 	})
 }
 
+// dropUnsupportedTextType provides early request drop
+// if metric type is not supported.
+// Only used with handlers which get metrics data from URL params.
 func dropUnsupportedTextType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")

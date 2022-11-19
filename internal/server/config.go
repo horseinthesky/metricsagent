@@ -8,6 +8,7 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Server default cofig options.
 const (
 	defaultListenOn      = "localhost:8080"
 	defaultRestoreFlag   = true
@@ -15,6 +16,7 @@ const (
 	defaultStoreFile     = "/tmp/devops-metrics-db.json"
 )
 
+// Server Agent Config description.
 type Config struct {
 	Address       string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
@@ -24,6 +26,9 @@ type Config struct {
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
+// ParseConfig parses the configuration options.
+// Env variables override flag values.
+// Default values are used if nothing mentioned above provided.
 func ParseConfig() (Config, error) {
 	cfg := Config{}
 

@@ -31,7 +31,7 @@ type Agent struct {
 	workGroup    sync.WaitGroup
 }
 
-// Agent constructor.
+// NewAgent is an Agent constructor.
 // Sets things up.
 func NewAgent(cfg Config) *Agent {
 	return &Agent{
@@ -47,7 +47,7 @@ func NewAgent(cfg Config) *Agent {
 	}
 }
 
-// Agent starting point.
+// Run is an Agent starting point.
 // Runs an agent.
 func (a *Agent) Run(ctx context.Context) {
 	a.workGroup.Add(4)
@@ -73,7 +73,7 @@ func (a *Agent) Run(ctx context.Context) {
 	a.pprofServer.Shutdown(ctx)
 }
 
-// Agent graceful shutdown method.
+// Stop is an Agent graceful shutdown method.
 // Ensures everything is stopped as expected.
 func (a *Agent) Stop() {
 	a.workGroup.Wait()

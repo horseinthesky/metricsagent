@@ -15,6 +15,7 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
+// dashboardTemplate is a path to metrics dashboard html template.
 const dashboardTemplate = "internal/server/templates/dashboard.html"
 
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +23,7 @@ func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
+// handleDashboard handles metrics dashboard rendering.
 func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
@@ -62,6 +64,8 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	})
 }
 
+// handleSaveTextMetric provides single metric receiver.
+// Metric type, name and value are obtained from URL params.
 func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")
@@ -107,6 +111,8 @@ func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	})
 }
 
+// handleLoadTextMetric provides single metric loader.
+// Metric name is obtained from URL param.
 func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
@@ -131,6 +137,8 @@ func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	})
 }
 
+// handleSaveJSONMetrics provides multiple metrics receiver.
+// Metrics type, name and value are obtained from JSON payload.
 func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -176,6 +184,8 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 	})
 }
 
+// handleSaveJSONMetric provides single metric receiver.
+// Metric type, name and value are obtained from JSON payload.
 func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -219,6 +229,8 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	})
 }
 
+// handleLoadJSONMetric provides metric JSON loader.
+// Metric ID is obtained from JSON payload.
 func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -256,6 +268,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 	})
 }
 
+// handlePingDB provides Server's DB healthcheck.
 func (s *Server) handlePingDB() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.Check(r.Context()); err != nil {

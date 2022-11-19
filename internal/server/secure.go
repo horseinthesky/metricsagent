@@ -8,7 +8,8 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
-
+// generateHash adds hash to metric.
+// Only used if hash key is provided.
 func (s *Server) generateHash(metric storage.Metric) []byte {
 	hash := hmac.New(sha256.New, []byte(s.config.Key))
 
