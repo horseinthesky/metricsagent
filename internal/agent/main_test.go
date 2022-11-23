@@ -1,4 +1,4 @@
-package main
+package agent
 
 import (
 	"context"
@@ -7,18 +7,16 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
-func main() {
+func Example() {
 	// Start agent
-	cfg, err := agent.ParseConfig()
+	cfg, err := ParseConfig()
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to parse agent config: %w", err))
 	}
 
-	agent := agent.NewAgent(cfg)
+	agent := NewAgent(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go agent.Run(ctx)

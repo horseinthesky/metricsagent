@@ -15,6 +15,7 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
+// dashboardTemplate is a path to metrics dashboard html template.
 const dashboardTemplate = "internal/server/templates/dashboard.html"
 
 func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +23,7 @@ func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(http.StatusText(http.StatusNotFound)))
 }
 
+// handleDashboard handles metrics dashboard rendering.
 func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
@@ -62,6 +64,8 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	})
 }
 
+// handleSaveTextMetric provides single metric receiver.
+// Metric type, name and value are obtained from URL params.
 func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")
@@ -107,6 +111,8 @@ func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 	})
 }
 
+// handleLoadTextMetric provides single metric loader.
+// Metric name is obtained from URL param.
 func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
@@ -131,11 +137,12 @@ func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	})
 }
 
+// handleSaveJSONMetrics provides multiple metrics receiver.
+// Metrics type, name and value are obtained from JSON payload.
 func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
-		// Get metric
 		metrics := []storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(&metrics)
 		if err != nil {
@@ -145,13 +152,11 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 		defer r.Body.Close()
 
 		for _, metric := range metrics {
-			// Check metric type
 			if storage.UnsupportedType(metric.MType) {
 				http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
 				return
 			}
 
-			// Check metric hash
 			if s.config.Key != "" {
 				localHash := s.generateHash(metric)
 				remoteHash, err := hex.DecodeString(metric.Hash)
@@ -168,7 +173,6 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 			}
 		}
 
-		// Save metric
 		err = s.saveMetricsBulk(metrics)
 		if err != nil {
 			log.Printf("failed to store metric: %s", err)
@@ -180,11 +184,12 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 	})
 }
 
+// handleSaveJSONMetric provides single metric receiver.
+// Metric type, name and value are obtained from JSON payload.
 func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
-		// Get metric
 		metric := storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(&metric)
 		if err != nil {
@@ -193,13 +198,11 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		// Check metric type
 		if storage.UnsupportedType(metric.MType) {
 			http.Error(w, `{"error": "unsupported metric type"}`, http.StatusNotImplemented)
 			return
 		}
 
-		// Check metric hash
 		if s.config.Key != "" {
 			localHash := s.generateHash(metric)
 			remoteHash, err := hex.DecodeString(metric.Hash)
@@ -215,7 +218,6 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 			}
 		}
 
-		// Save metric
 		err = s.saveMetric(metric)
 		if err != nil {
 			log.Printf("failed to store metric: %s", err)
@@ -227,11 +229,12 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 	})
 }
 
+// handleLoadJSONMetric provides metric JSON loader.
+// Metric ID is obtained from JSON payload.
 func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 
-		// Parse metric request
 		metricRequest := &storage.Metric{}
 		err := json.NewDecoder(r.Body).Decode(metricRequest)
 		if err != nil {
@@ -245,19 +248,17 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		// Get metric
 		metric, err := s.db.Get(r.Context(), metricRequest.ID)
 		if err != nil {
-			http.Error(w, `{"result": "unknown metric id"}`, http.StatusNotFound)
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"result": "unknown metric id"}`))
 			return
 		}
 
-		// Set metric hash
 		if s.config.Key != "" {
 			metric.Hash = hex.EncodeToString(s.generateHash(metric))
 		}
 
-		// Send metric
 		res, err := json.Marshal(metric)
 		if err != nil {
 			http.Error(w, `{"error": "faied to marshal metric"}`, http.StatusInternalServerError)
@@ -268,6 +269,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 	})
 }
 
+// handlePingDB provides Server's DB healthcheck.
 func (s *Server) handlePingDB() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := s.db.Check(r.Context()); err != nil {

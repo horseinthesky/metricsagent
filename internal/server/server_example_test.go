@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -7,21 +7,19 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/horseinthesky/metricsagent/internal/agent"
 )
 
-func main() {
-	// Start agent
-	cfg, err := agent.ParseConfig()
+func Example() {
+	// Start server
+	cfg, err := ParseConfig()
 	if err != nil {
-		log.Fatal(fmt.Errorf("failed to parse agent config: %w", err))
+		log.Fatal(fmt.Errorf("failed to parse server config: %w", err))
 	}
 
-	agent := agent.NewAgent(cfg)
+	server := NewServer(cfg)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go agent.Run(ctx)
+	go server.Run(ctx)
 
 	// Handle graceful shutdown
 	term := make(chan os.Signal, 1)
@@ -31,5 +29,5 @@ func main() {
 	log.Printf("signal received: %v; terminating...\n", sig)
 
 	cancel()
-	agent.Stop()
+	server.Stop()
 }
