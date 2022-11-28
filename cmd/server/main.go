@@ -11,6 +11,12 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
 	// Start server
 	cfg, err := server.ParseConfig()
@@ -22,6 +28,9 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go metricsServer.Run(ctx)
+
+	// Log build info
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
 
 	// Handle graceful shutdown
 	term := make(chan os.Signal, 1)
