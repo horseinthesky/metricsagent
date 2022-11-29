@@ -87,8 +87,9 @@ func TestMemoryDB(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(50), *dbCounter.Delta)
 
-	_, err = db.Get(ctx, "notExists")
+	notExists, err := db.Get(ctx, "notExists")
 	require.Error(t, err)
+	require.Empty(t, notExists)
 
 	dbMetrics, err := db.GetAll(ctx)
 	require.NoError(t, err)

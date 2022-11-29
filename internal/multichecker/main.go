@@ -5,6 +5,8 @@
 //   - all staticcheck.io SA(staticcheck) checkers
 //   - ST1001 staticcheck.io stylecheck checker
 //   - S1001 staticcheck.io simple checker
+//   - nilerr checker from https://github.com/gostaticanalysis/nilerr
+//   - unuseparam checker finds a unused parameter but its name is not _
 //   - custom checker which checks if you are using os.Exit in main function
 package main
 
@@ -15,6 +17,9 @@ import (
 	"golang.org/x/tools/go/analysis/passes/printf"
 	"golang.org/x/tools/go/analysis/passes/structtag"
 	"golang.org/x/tools/go/analysis/passes/unreachable"
+
+	"github.com/gostaticanalysis/nilerr"
+	"github.com/gostaticanalysis/unuseparam"
 	"honnef.co/go/tools/simple"
 	"honnef.co/go/tools/stylecheck"
 )
@@ -33,6 +38,8 @@ func main() {
 		unreachable.Analyzer,
 		stylecheck.Analyzers["ST1001"],
 		simple.Analyzers["S1001"],
+		nilerr.Analyzer,
+		unuseparam.Analyzer,
 		NoOSExitAnalyzer,
 	)
 

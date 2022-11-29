@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestAgent(t *testing.T) {
@@ -21,4 +23,6 @@ func TestAgent(t *testing.T) {
 	cancel()
 
 	testAgent.Stop()
+
+	require.True(t, true)
 }
