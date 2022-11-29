@@ -1,11 +1,11 @@
 // Package agent describes metrics agent internals.
 //
 // It consists of the following parts:
-//  - main.go - agent struct and its lifecycle methods
-//  - config.go - agent configuration options
-//  - collect.go - agent metrics and collect methods
-//  - secure.go - agent metrics hash protection
-//  - send.go - agent metrics send methods
+//   - main.go - agent struct and its lifecycle methods
+//   - config.go - agent configuration options
+//   - collect.go - agent metrics and collect methods
+//   - secure.go - agent metrics hash protection
+//   - send.go - agent metrics send methods
 package agent
 
 import (

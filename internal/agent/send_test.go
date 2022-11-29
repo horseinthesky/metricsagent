@@ -27,6 +27,7 @@ func TestPrepareMetrics(t *testing.T) {
 	agent := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
+		Key: "testkey",
 	})
 
 	metrics := agent.prepareMetrics()

@@ -80,6 +80,18 @@ func TestTextHandlers(t *testing.T) {
 			expected: http.StatusNotImplemented,
 		},
 		{
+			name:     "test save invalid metric counter",
+			method:   http.MethodPost,
+			path:     "/update/counter/invalidCounter/invalidCounter",
+			expected: http.StatusBadRequest,
+		},
+		{
+			name:     "test save invalid metric gauge",
+			method:   http.MethodPost,
+			path:     "/update/gauge/invalidCounter/invalidCounter",
+			expected: http.StatusBadRequest,
+		},
+		{
 			name:     "test save valid metric counter",
 			method:   http.MethodPost,
 			path:     "/update/counter/testCounter/100",

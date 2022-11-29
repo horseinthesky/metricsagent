@@ -18,7 +18,7 @@ func (a *Agent) addHash(metric *Metric) {
 	case "gauge":
 		data = fmt.Sprintf("%s:%s:%f", metric.ID, metric.MType, *metric.Value)
 	case "counter":
-		data = fmt.Sprintf("%s:%s:%d", metric.ID, metric.MType,  *metric.Delta)
+		data = fmt.Sprintf("%s:%s:%d", metric.ID, metric.MType, *metric.Delta)
 	}
 
 	h.Write([]byte(data))
