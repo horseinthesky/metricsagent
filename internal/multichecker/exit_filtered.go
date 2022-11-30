@@ -58,9 +58,6 @@ func runFiltered(pass *analysis.Pass) (interface{}, error) {
 				pass.Reportf(identifier.Pos(), "usage of os.Exit in main func of main package is forbiden")
 			}
 		}
-
-		return
-
 	})
 
 	return nil, nil
