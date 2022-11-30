@@ -40,7 +40,8 @@ func main() {
 		simple.Analyzers["S1001"],
 		nilerr.Analyzer,
 		unuseparam.Analyzer,
-		NoOSExitAnalyzer,
+		// NoOSExitAnalyzer,
+		NoOSExitFilteredAnalyzer,
 	)
 
 	multichecker.Main(analyzers...)

@@ -14,16 +14,19 @@ var NoOSExitAnalyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
+		// Ignore all files not in main package
 		if file.Name.Name != "main" {
 			continue
 		}
 
 		ast.Inspect(file, func(node ast.Node) bool {
+			// Ignore all nodes that are not fucntion desclarations
 			fdecl, ok := node.(*ast.FuncDecl)
 			if !ok {
 				return true
 			}
 
+			// Ignore all function declarations that are not "main"
 			if fdecl.Name.Name != "main" {
 				return true
 			}
