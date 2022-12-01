@@ -160,7 +160,6 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 			if s.config.Key != "" {
 				localHash := s.generateHash(metric)
 				remoteHash, err := hex.DecodeString(metric.Hash)
-
 				if err != nil {
 					http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
 					return

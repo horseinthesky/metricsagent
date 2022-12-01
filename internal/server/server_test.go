@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 )
 
 var testServer = NewServer(Config{
+	Address:       defaultListenOn,
 	Restore:       false,
 	StoreInterval: 10 * time.Minute,
 	StoreFile:     "/tmp/test-metrics-db.json",
@@ -30,6 +32,19 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload
 	defer resp.Body.Close()
 
 	return resp.StatusCode, string(respBody)
+}
+
+func TestServerRun(t *testing.T) {
+	testServer.restore()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go testServer.Run(ctx)
+
+	time.Sleep(2 * time.Second)
+	testServer.dump()
+
+	cancel()
+	testServer.Stop()
 }
 
 func TestGeneral(t *testing.T) {
@@ -78,6 +93,18 @@ func TestTextHandlers(t *testing.T) {
 			method:   http.MethodPost,
 			path:     "/update/unsupported/testUnsupported/100",
 			expected: http.StatusNotImplemented,
+		},
+		{
+			name:     "test save invalid metric counter",
+			method:   http.MethodPost,
+			path:     "/update/counter/invalidCounter/invalidCounter",
+			expected: http.StatusBadRequest,
+		},
+		{
+			name:     "test save invalid metric gauge",
+			method:   http.MethodPost,
+			path:     "/update/gauge/invalidCounter/invalidCounter",
+			expected: http.StatusBadRequest,
 		},
 		{
 			name:     "test save valid metric counter",
@@ -254,7 +281,7 @@ func TestJSONHandlers(t *testing.T) {
 				}
 			`,
 			expected: http.StatusOK,
-			body: `{"id":"testJSONCounter","type":"counter","delta":110}`,
+			body:     `{"id":"testJSONCounter","type":"counter","delta":110}`,
 		},
 		{
 			name:   "test get gauge JSON",
@@ -267,7 +294,7 @@ func TestJSONHandlers(t *testing.T) {
 				}
 			`,
 			expected: http.StatusOK,
-			body: `{"id":"testJSONGauge","type":"gauge","value":11}`,
+			body:     `{"id":"testJSONGauge","type":"gauge","value":11}`,
 		},
 	}
 

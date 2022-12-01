@@ -27,6 +27,7 @@ func TestPrepareMetrics(t *testing.T) {
 	agent := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
+		Key: "testkey",
 	})
 
 	metrics := agent.prepareMetrics()
@@ -42,7 +43,7 @@ func TestSendMetricsJSONBulk(t *testing.T) {
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 	})
-	agent.client = NewTestClient(func(req *http.Request) *http.Response {
+	agent.client = NewTestClient(func(*http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(`{"test": "passed"}`)),
