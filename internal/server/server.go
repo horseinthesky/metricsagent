@@ -108,6 +108,7 @@ func (s *Server) Run(ctx context.Context) {
 		log.Fatalf("failed to init db: %s", err)
 	}
 
+	log.Printf("listening on %s", s.config.Address)
 	log.Fatalf("server crashed due to %s", http.ListenAndServe(s.config.Address, s))
 }
 
