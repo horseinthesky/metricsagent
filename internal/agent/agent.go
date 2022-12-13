@@ -10,6 +10,7 @@ package agent
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
@@ -25,6 +26,7 @@ type Agent struct {
 	PollCounter  int64
 	pprofServer  *http.Server
 	key          string
+	cryptoKey    *rsa.PublicKey
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
@@ -34,11 +36,22 @@ type Agent struct {
 // NewAgent is an Agent constructor.
 // Sets things up.
 func NewAgent(cfg Config) *Agent {
+	var pubKey *rsa.PublicKey
+	if cfg.CryptoKey != "" {
+		var err error
+
+		pubKey, err = parseCryptoPubKey(cfg.CryptoKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		pprofServer:  &http.Server{Addr: cfg.Pprof},
 		key:          cfg.Key,
+		cryptoKey:    pubKey,
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", cfg.Address),
 		client: &http.Client{

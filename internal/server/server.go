@@ -1,16 +1,17 @@
 // Package server describes metrics server  internals.
 //
 // It consists of the following parts:
-//  - server.go - server struct and its lifecycle methods
-//  - config.go - server configuration options
-//  - backup.go - server periodic backup methods
-//  - secure.go - server metrics hash protection
-//  - middleware.go - server middleware
-//  - handlers.go - server HTTP router endpoints buciness logic
+//   - server.go - server struct and its lifecycle methods
+//   - config.go - server configuration options
+//   - backup.go - server periodic backup methods
+//   - secure.go - server metrics hash protection
+//   - middleware.go - server middleware
+//   - handlers.go - server HTTP router endpoints buciness logic
 package server
 
 import (
 	"context"
+	"crypto/rsa"
 	"log"
 	"net/http"
 	"sync"
@@ -26,6 +27,7 @@ import (
 type Server struct {
 	*chi.Mux
 	config    Config
+	cryptoKey   *rsa.PrivateKey
 	db        storage.Storage
 	backuper  *Backuper
 	workGroup sync.WaitGroup
@@ -33,19 +35,29 @@ type Server struct {
 
 // Server constructor.
 // Sets things up.
-func NewServer(config Config) *Server {
+func NewServer(cfg Config) *Server {
+	var privKey *rsa.PrivateKey
+	if cfg.CryptoKey != "" {
+		var err error
+
+		privKey, err = parseCryptoPrivKey(cfg.CryptoKey)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
 	r := chi.NewRouter()
 
 	var db storage.Storage
-	if config.DatabaseDSN != "" {
-		db = storage.NewDBStorage(config.DatabaseDSN)
+	if cfg.DatabaseDSN != "" {
+		db = storage.NewDBStorage(cfg.DatabaseDSN)
 	} else {
 		db = storage.NewMemoryStorage()
 	}
 
-	backuper := NewBackuper(config.StoreFile)
+	backuper := NewBackuper(cfg.StoreFile)
 
-	server := &Server{r, config, db, backuper, sync.WaitGroup{}}
+	server := &Server{r, cfg, privKey, db, backuper, sync.WaitGroup{}}
 	server.setupRouter()
 
 	return server
@@ -54,8 +66,9 @@ func NewServer(config Config) *Server {
 // setupRouter builds Server's HTTP router.
 // Assembles middleware and handlers.
 func (s *Server) setupRouter() {
-	s.Use(logRequest)
 	s.Use(handleGzip)
+	s.Use(s.handleDecrypt)
+	s.Use(logRequest)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
 	s.Use(middleware.Logger)
@@ -145,8 +158,8 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 
 // saveMetric handles synchronous metric backup.
 // Only used by handleSaveJSONMetric handler when
-//  - in-memory storage is in use
-//  - no StoreInterval provided
+//   - in-memory storage is in use
+//   - no StoreInterval provided
 func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.db.Set(metric)
 
@@ -161,8 +174,8 @@ func (s *Server) saveMetric(metric storage.Metric) error {
 
 // saveMetricBulk handles synchronous bulk metric backup.
 // Only used by handleSaveJSONMetrics handler when
-//  - in-memory storage is in use
-//  - no StoreInterval provided
+//   - in-memory storage is in use
+//   - no StoreInterval provided
 func (s *Server) saveMetricsBulk(metrics []storage.Metric) error {
 	err := s.db.SetBulk(metrics)
 

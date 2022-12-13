@@ -62,6 +62,7 @@ type Config struct {
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 	Pprof          string        `env:"PPROF"`
 	Key            string        `env:"KEY"`
+	CryptoKey      string        `env:"CRYPTO_KEY"`
 }
 
 // ParseConfig parses the configuration options.
@@ -76,10 +77,11 @@ func ParseConfig() (Config, error) {
 	flag.DurationVar(&cfg.PollInterval, "p", defaultPollInterval, "Metric poll interval")
 	flag.StringVar(&cfg.Pprof, "P", defaultPprofAddress, "Pprof address")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto public key path")
 	flag.Parse()
 
 	err := loadConfigFile(&cfg)
-	if err != nil{
+	if err != nil {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
 	}
 
@@ -97,13 +99,13 @@ func loadConfigFile(cfg *Config) error {
 
 	configBytes, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {
-		return fmt.Errorf("error reading confg file: %w", err)
+		return err
 	}
 
 	var cfgFromFile ConfigFile
 	err = json.Unmarshal(configBytes, &cfgFromFile)
 	if err != nil {
-		return fmt.Errorf("error parsing config file: %w", err)
+		return err
 	}
 
 	if cfg.Address == defaultAddress && cfgFromFile.Address != "" {
@@ -118,8 +120,8 @@ func loadConfigFile(cfg *Config) error {
 		cfg.PollInterval = cfgFromFile.PollInterval.Duration
 	}
 
-	if cfg.Key == "" && cfgFromFile.CryptoKey != "" {
-		cfg.Key = cfgFromFile.CryptoKey
+	if cfg.CryptoKey == "" && cfgFromFile.CryptoKey != "" {
+		cfg.CryptoKey = cfgFromFile.CryptoKey
 	}
 
 	return nil

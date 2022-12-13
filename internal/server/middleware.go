@@ -24,6 +24,34 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// handleDecrypt provides RSA decryption.
+func (s *Server) handleDecrypt(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cryptoKey == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		encryptedBody, err := io.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+
+		decryptedBody, err := decryptWithPrivateKey(encryptedBody, s.cryptoKey)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(decryptedBody))
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // handleGzip provides gzip compression.
 func handleGzip(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,12 +74,12 @@ func handleGzip(next http.Handler) http.Handler {
 
 // logRequest logs some HTTP request data.
 // Stores:
-//  - method
-//  - client address
-//  - headers
-//  - URL path
-//  - body
-//  - headers
+//   - method
+//   - client address
+//   - headers
+//   - URL path
+//   - body
+//   - headers
 func logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)

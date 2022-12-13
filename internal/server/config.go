@@ -64,6 +64,7 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Key           string        `env:"KEY"`
+	CryptoKey     string        `env:"CRYPTO_KEY"`
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
 }
 
@@ -79,11 +80,12 @@ func ParseConfig() (Config, error) {
 	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
 	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto private key path")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
 	flag.Parse()
 
 	err := loadConfigFile(&cfg)
-	if err != nil{
+	if err != nil {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
 	}
 
@@ -101,13 +103,13 @@ func loadConfigFile(cfg *Config) error {
 
 	configBytes, err := os.ReadFile(cfg.ConfigPath)
 	if err != nil {
-		return fmt.Errorf("error reading confg file: %w", err)
+		return err
 	}
 
 	var cfgFromFile ConfigFile
 	err = json.Unmarshal(configBytes, &cfgFromFile)
 	if err != nil {
-		return fmt.Errorf("error parsing config file: %w", err)
+		return err
 	}
 
 	if cfg.Address == defaultListenOn && cfgFromFile.Address != "" {
@@ -126,8 +128,8 @@ func loadConfigFile(cfg *Config) error {
 		cfg.StoreFile = cfgFromFile.StoreFile
 	}
 
-	if cfg.Key == "" && cfgFromFile.CryptoKey != "" {
-		cfg.Key = cfgFromFile.CryptoKey
+	if cfg.CryptoKey == "" && cfgFromFile.CryptoKey != "" {
+		cfg.CryptoKey = cfgFromFile.CryptoKey
 	}
 
 	if cfg.DatabaseDSN == "" && cfgFromFile.DatabaseDSN != "" {
