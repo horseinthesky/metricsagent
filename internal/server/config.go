@@ -23,16 +23,6 @@ type Duration struct {
 	time.Duration
 }
 
-// ConfigFile is a container to store config file data
-type ConfigFile struct {
-	Address       string   `json:"address"`
-	Restore       bool     `json:"restore"`
-	StoreInterval Duration `json:"store_interval"`
-	StoreFile     string   `josn:"store_file"`
-	CryptoKey     string   `json:"crypto_key"`
-	DatabaseDSN   string   `json:"database_dsn"`
-}
-
 func (d *Duration) UnmarshalJSON(b []byte) error {
 	var unmarshalledJSON interface{}
 
@@ -54,6 +44,16 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 	}
 
 	return nil
+}
+
+// ConfigFile is a container to store config file data
+type ConfigFile struct {
+	Address       string   `json:"address"`
+	Restore       bool     `json:"restore"`
+	StoreInterval Duration `json:"store_interval"`
+	StoreFile     string   `josn:"store_file"`
+	CryptoKey     string   `json:"crypto_key"`
+	DatabaseDSN   string   `json:"database_dsn"`
 }
 
 // Server Agent Config description.
@@ -82,41 +82,9 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
 	flag.Parse()
 
-	if cfg.ConfigPath != "" {
-		configBytes, err := os.ReadFile(cfg.ConfigPath)
-		if err != nil {
-			return Config{}, fmt.Errorf("error reading confg file: %w", err)
-		}
-
-		var cfgFromFile ConfigFile
-		err = json.Unmarshal(configBytes, &cfgFromFile)
-		if err != nil {
-			return Config{}, fmt.Errorf("error parsing config file: %w", err)
-		}
-
-		if cfg.Address == defaultListenOn && cfgFromFile.Address != "" {
-			cfg.Address = cfgFromFile.Address
-		}
-
-		if cfg.Restore && !cfgFromFile.Restore {
-			cfg.Restore = cfgFromFile.Restore
-		}
-
-		if cfg.StoreInterval == defaultStoreInterval && cfgFromFile.StoreInterval.Duration == 0 {
-			cfg.StoreInterval = cfgFromFile.StoreInterval.Duration
-		}
-
-		if cfg.StoreFile == defaultStoreFile && cfgFromFile.StoreFile != "" {
-			cfg.StoreFile = cfgFromFile.StoreFile
-		}
-
-		if cfg.Key == "" && cfgFromFile.CryptoKey != "" {
-			cfg.Key = cfgFromFile.CryptoKey
-		}
-
-		if cfg.DatabaseDSN == "" && cfgFromFile.DatabaseDSN != "" {
-			cfg.DatabaseDSN = cfgFromFile.DatabaseDSN
-		}
+	err := loadConfigFile(&cfg)
+	if err != nil{
+		return Config{}, fmt.Errorf("failed to load config file: %w", err)
 	}
 
 	if err := env.Parse(&cfg); err != nil {
@@ -124,4 +92,47 @@ func ParseConfig() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func loadConfigFile(cfg *Config) error {
+	if cfg.ConfigPath == "" {
+		return nil
+	}
+
+	configBytes, err := os.ReadFile(cfg.ConfigPath)
+	if err != nil {
+		return fmt.Errorf("error reading confg file: %w", err)
+	}
+
+	var cfgFromFile ConfigFile
+	err = json.Unmarshal(configBytes, &cfgFromFile)
+	if err != nil {
+		return fmt.Errorf("error parsing config file: %w", err)
+	}
+
+	if cfg.Address == defaultListenOn && cfgFromFile.Address != "" {
+		cfg.Address = cfgFromFile.Address
+	}
+
+	if cfg.Restore && !cfgFromFile.Restore {
+		cfg.Restore = cfgFromFile.Restore
+	}
+
+	if cfg.StoreInterval == defaultStoreInterval && cfgFromFile.StoreInterval.Duration == 0 {
+		cfg.StoreInterval = cfgFromFile.StoreInterval.Duration
+	}
+
+	if cfg.StoreFile == defaultStoreFile && cfgFromFile.StoreFile != "" {
+		cfg.StoreFile = cfgFromFile.StoreFile
+	}
+
+	if cfg.Key == "" && cfgFromFile.CryptoKey != "" {
+		cfg.Key = cfgFromFile.CryptoKey
+	}
+
+	if cfg.DatabaseDSN == "" && cfgFromFile.DatabaseDSN != "" {
+		cfg.DatabaseDSN = cfgFromFile.DatabaseDSN
+	}
+
+	return nil
 }
