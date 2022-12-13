@@ -81,13 +81,13 @@ func ParseConfig() (Config, error) {
 	if cfg.ConfigPath != "" {
 		configBytes, err := os.ReadFile(cfg.ConfigPath)
 		if err != nil {
-			return Config{}, fmt.Errorf("Error reading confg file: %w", err)
+			return Config{}, fmt.Errorf("error reading confg file: %w", err)
 		}
 
 		var cfgFromFile ConfigFile
 		err = json.Unmarshal(configBytes, &cfgFromFile)
 		if err != nil {
-			return Config{}, fmt.Errorf("Error parsing config file: %w", err)
+			return Config{}, fmt.Errorf("error parsing config file: %w", err)
 		}
 
 		if cfg.Address == defaultAddress && cfgFromFile.Address != "" {
