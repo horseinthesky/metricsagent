@@ -365,6 +365,30 @@ func TestJSONHandlersHashed(t *testing.T) {
 			expected: http.StatusOK,
 		},
 		{
+			name:   "test save invalid hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestInvalidHashedGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "invalidhash"
+			}`,
+			expected: http.StatusInternalServerError,
+		},
+		{
+			name:   "test save wrong hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestWrongHashedGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+			}`,
+			expected: http.StatusBadRequest,
+		},
+		{
 			name:   "test save a pair of hashed metrics",
 			method: http.MethodPost,
 			path:   "/updates/",
@@ -383,6 +407,34 @@ func TestJSONHandlersHashed(t *testing.T) {
 				}
 			]`,
 			expected: http.StatusOK,
+		},
+		{
+			name:   "test save invalid hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestInvalidHashCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "invalidhash"
+				}
+			]`,
+			expected: http.StatusInternalServerError,
+		},
+		{
+			name:   "test save wrong hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestWrongHashedCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+				}
+			]`,
+			expected: http.StatusBadRequest,
 		},
 	}
 
