@@ -18,9 +18,6 @@ import (
 //go:embed templates/dashboard.html
 var dashboardTemplate string
 
-// dashboardTemplate is a path to metrics dashboard html template.
-// const dashboardTemplate = "internal/server/templates/dashboard.html"
-
 // handleDashboard handles metrics dashboard rendering.
 func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

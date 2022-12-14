@@ -12,7 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testServer *Server
+var (
+	testServer       *Server
+	testHashedServer *Server
+)
 
 func init() {
 	testServer, _ = NewServer(Config{
@@ -20,6 +23,14 @@ func init() {
 		Restore:       false,
 		StoreInterval: 10 * time.Minute,
 		StoreFile:     "/tmp/test-metrics-db.json",
+	})
+
+	testHashedServer, _ = NewServer(Config{
+		Address:       "localhost:8085",
+		Restore:       false,
+		StoreInterval: 10 * time.Minute,
+		StoreFile:     "/tmp/test-metrics-db.json",
+		Key:           "testkey",
 	})
 }
 
@@ -317,6 +328,71 @@ func TestJSONHandlers(t *testing.T) {
 			code, body := testRequest(t, ts, tt.method, tt.path, tt.payload)
 			require.Equal(t, tt.expected, code)
 			require.Equal(t, tt.body, body)
+		})
+	}
+}
+
+func TestJSONHandlersHashed(t *testing.T) {
+	saveTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+	}{
+		{
+			name:   "test save hashed counter JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestCounter",
+				"type": "counter",
+				"delta": 15,
+				"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+			}`,
+			expected: http.StatusOK,
+		},
+		{
+			name:   "test save hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+			}`,
+			expected: http.StatusOK,
+		},
+		{
+			name:   "test save a pair of hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+				},
+				{
+					"id": "TestGauge",
+					"type": "gauge",
+					"value": 15,
+					"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+				}
+			]`,
+			expected: http.StatusOK,
+		},
+	}
+
+	ts := httptest.NewServer(testHashedServer)
+	defer ts.Close()
+
+	for _, tt := range saveTests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _ := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
 		})
 	}
 }

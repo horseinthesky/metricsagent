@@ -83,29 +83,29 @@ func handleGzip(next http.Handler) http.Handler {
 //   - URL path
 //   - body
 //   - headers
-func logRequest(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
-
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Println("Body: failed to read")
-			next.ServeHTTP(w, r)
-		}
-		defer r.Body.Close()
-
-		log.Print("Body:", string(bodyBytes))
-		log.Print("Headers:")
-		for header, values := range r.Header {
-			log.Print(header, values)
-
-		}
-
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		next.ServeHTTP(w, r)
-	})
-}
+// func logRequest(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
+//
+// 		bodyBytes, err := io.ReadAll(r.Body)
+// 		if err != nil {
+// 			log.Println("Body: failed to read")
+// 			next.ServeHTTP(w, r)
+// 		}
+// 		defer r.Body.Close()
+//
+// 		log.Print("Body:", string(bodyBytes))
+// 		log.Print("Headers:")
+// 		for header, values := range r.Header {
+// 			log.Print(header, values)
+//
+// 		}
+//
+// 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+//
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 // dropUnsupportedTextType provides early request drop
 // if metric type is not supported.
