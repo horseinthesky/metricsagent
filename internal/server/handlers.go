@@ -2,12 +2,12 @@ package server
 
 import (
 	"crypto/hmac"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"text/template"
 
@@ -15,8 +15,11 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
+//go:embed templates/dashboard.html
+var dashboardTemplate string
+
 // dashboardTemplate is a path to metrics dashboard html template.
-const dashboardTemplate = "internal/server/templates/dashboard.html"
+// const dashboardTemplate = "internal/server/templates/dashboard.html"
 
 // handleDashboard handles metrics dashboard rendering.
 func (s *Server) handleDashboard() http.HandlerFunc {
@@ -38,15 +41,9 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 			}
 		}
 
-		htmlPage, err := os.ReadFile(dashboardTemplate)
-		if err != nil {
-			log.Printf("failed to read dashboard template file: %s", err)
-			return
-		}
-
 		w.Header().Set("Content-Type", "text/html")
 
-		tmpl, err := template.New("").Parse(string(htmlPage))
+		tmpl, err := template.New("").Parse(dashboardTemplate)
 		if err != nil {
 			log.Printf("failed to parse a template: %s", err)
 			return

@@ -327,5 +327,5 @@ func TestDashBoard(t *testing.T) {
 
 	code, body := testRequest(t, ts, http.MethodGet, "/", "")
 	require.Equal(t, http.StatusOK, code)
-	require.Empty(t, body)
+	require.NotEmpty(t, body)
 }
