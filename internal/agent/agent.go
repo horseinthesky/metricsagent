@@ -35,14 +35,14 @@ type Agent struct {
 
 // NewAgent is an Agent constructor.
 // Sets things up.
-func NewAgent(cfg Config) *Agent {
+func NewAgent(cfg Config) (*Agent, error) {
 	var pubKey *rsa.PublicKey
 	if cfg.CryptoKey != "" {
 		var err error
 
 		pubKey, err = parseCryptoPubKey(cfg.CryptoKey)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	}
 
@@ -57,7 +57,7 @@ func NewAgent(cfg Config) *Agent {
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
-	}
+	}, nil
 }
 
 // Run is an Agent starting point.

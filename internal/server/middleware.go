@@ -34,13 +34,16 @@ func (s *Server) handleDecrypt(next http.Handler) http.Handler {
 
 		encryptedBody, err := io.ReadAll(r.Body)
 		if err != nil {
+			log.Println("failed to read body")
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 			return
 		}
+		defer r.Body.Close()
 
 		decryptedBody, err := decryptWithPrivateKey(encryptedBody, s.cryptoKey)
 		if err != nil {
+			log.Println("failed to decrypt body")
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
 			return
@@ -87,7 +90,6 @@ func logRequest(next http.Handler) http.Handler {
 		bodyBytes, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Println("Body: failed to read")
-			r.Body.Close()
 			next.ServeHTTP(w, r)
 		}
 		defer r.Body.Close()
@@ -113,6 +115,7 @@ func dropUnsupportedTextType(next http.Handler) http.Handler {
 		metricType := chi.URLParam(r, "metricType")
 
 		if metricType != storage.Gauge.String() && metricType != storage.Counter.String() {
+			log.Printf("metric has unsupported type: %s", metricType)
 			w.WriteHeader(http.StatusNotImplemented)
 			w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
 			return

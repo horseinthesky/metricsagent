@@ -35,14 +35,14 @@ type Server struct {
 
 // Server constructor.
 // Sets things up.
-func NewServer(cfg Config) *Server {
+func NewServer(cfg Config) (*Server, error) {
 	var privKey *rsa.PrivateKey
 	if cfg.CryptoKey != "" {
 		var err error
 
 		privKey, err = parseCryptoPrivKey(cfg.CryptoKey)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	}
 
@@ -60,15 +60,15 @@ func NewServer(cfg Config) *Server {
 	server := &Server{r, cfg, privKey, db, backuper, sync.WaitGroup{}}
 	server.setupRouter()
 
-	return server
+	return server, nil
 }
 
 // setupRouter builds Server's HTTP router.
 // Assembles middleware and handlers.
 func (s *Server) setupRouter() {
 	s.Use(handleGzip)
-	s.Use(s.handleDecrypt)
 	s.Use(logRequest)
+	s.Use(s.handleDecrypt)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
 	s.Use(middleware.Logger)

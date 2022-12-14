@@ -16,7 +16,10 @@ func Example() {
 		log.Fatal(fmt.Errorf("failed to parse server config: %w", err))
 	}
 
-	server := NewServer(cfg)
+	server, err := NewServer(cfg)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to create server: %w", err))
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go server.Run(ctx)

@@ -16,7 +16,10 @@ func Example() {
 		log.Fatal(fmt.Errorf("failed to parse agent config: %w", err))
 	}
 
-	agent := NewAgent(cfg)
+	agent, err := NewAgent(cfg)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to create agent: %w", err))
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go agent.Run(ctx)

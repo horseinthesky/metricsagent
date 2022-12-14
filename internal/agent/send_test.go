@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type roundTripFunc func(req *http.Request) *http.Response
@@ -24,25 +24,30 @@ func NewTestClient(fn roundTripFunc) *http.Client {
 }
 
 func TestPrepareMetrics(t *testing.T) {
-	agent := NewAgent(Config{
+	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 		Key: "testkey",
 	})
 
+	require.NoError(t, err)
+
 	metrics := agent.prepareMetrics()
-	assert.Equal(t, len(metrics), 1)
+	require.Equal(t, len(metrics), 1)
 
 	agent.updateRuntimeMetrics()
 	metrics = agent.prepareMetrics()
-	assert.Greater(t, len(metrics), 1)
+	require.Greater(t, len(metrics), 1)
 }
 
 func TestSendMetricsJSONBulk(t *testing.T) {
-	agent := NewAgent(Config{
+	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 	})
+
+	require.NoError(t, err)
+
 	agent.client = NewTestClient(func(*http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
@@ -51,7 +56,7 @@ func TestSendMetricsJSONBulk(t *testing.T) {
 	})
 
 	code, body, err := agent.sendPostJSONBulk(context.Background(), []Metric{{}})
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusOK, code)
-	assert.Equal(t, `{"test": "passed"}`, body)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusOK, code)
+	require.Equal(t, `{"test": "passed"}`, body)
 }

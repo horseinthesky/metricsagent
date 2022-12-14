@@ -12,12 +12,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testServer = NewServer(Config{
-	Address:       defaultListenOn,
-	Restore:       false,
-	StoreInterval: 10 * time.Minute,
-	StoreFile:     "/tmp/test-metrics-db.json",
-})
+var testServer *Server
+
+func init() {
+	testServer, _ = NewServer(Config{
+		Address:       defaultListenOn,
+		Restore:       false,
+		StoreInterval: 10 * time.Minute,
+		StoreFile:     "/tmp/test-metrics-db.json",
+	})
+}
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload string) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer([]byte(payload)))

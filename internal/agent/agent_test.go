@@ -9,12 +9,14 @@ import (
 )
 
 func TestAgent(t *testing.T) {
-	testAgent := NewAgent(Config{
+	testAgent, err := NewAgent(Config{
 		Address:        defaultAddress,
 		PollInterval:   2 * time.Second,
 		ReportInterval: 10 * time.Second,
 		Pprof:          defaultPprofAddress,
 	})
+
+	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go testAgent.Run(ctx)
