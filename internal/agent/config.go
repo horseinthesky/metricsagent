@@ -50,7 +50,7 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 type ConfigFile struct {
 	Address        string   `json:"address"`
 	ReportInterval Duration `json:"report_interval"`
-	PollInterval   Duration `json:"poll_file"`
+	PollInterval   Duration `json:"poll_interval"`
 	CryptoKey      string   `json:"crypto_key"`
 }
 
@@ -80,13 +80,13 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto public key path")
 	flag.Parse()
 
+	if err := env.Parse(&cfg); err != nil {
+		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
+	}
+
 	err := loadConfigFile(&cfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
-	}
-
-	if err := env.Parse(&cfg); err != nil {
-		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
 	}
 
 	return cfg, nil
@@ -112,11 +112,11 @@ func loadConfigFile(cfg *Config) error {
 		cfg.Address = cfgFromFile.Address
 	}
 
-	if cfg.ReportInterval == defaultReportInterval && cfgFromFile.ReportInterval.Duration == 0 {
+	if cfg.ReportInterval == defaultReportInterval && cfgFromFile.ReportInterval.Duration != 0 {
 		cfg.ReportInterval = cfgFromFile.ReportInterval.Duration
 	}
 
-	if cfg.PollInterval == defaultPollInterval && cfgFromFile.PollInterval.Duration == 0 {
+	if cfg.PollInterval == defaultPollInterval && cfgFromFile.PollInterval.Duration != 0 {
 		cfg.PollInterval = cfgFromFile.PollInterval.Duration
 	}
 
