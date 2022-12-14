@@ -84,13 +84,13 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
 	flag.Parse()
 
+	if err := env.Parse(&cfg); err != nil {
+		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
+	}
+
 	err := loadConfigFile(&cfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
-	}
-
-	if err := env.Parse(&cfg); err != nil {
-		return Config{}, fmt.Errorf("failed to parse env vars: %w", err)
 	}
 
 	return cfg, nil
@@ -120,7 +120,7 @@ func loadConfigFile(cfg *Config) error {
 		cfg.Restore = cfgFromFile.Restore
 	}
 
-	if cfg.StoreInterval == defaultStoreInterval && cfgFromFile.StoreInterval.Duration == 0 {
+	if cfg.StoreInterval == defaultStoreInterval && cfgFromFile.StoreInterval.Duration != 0 {
 		cfg.StoreInterval = cfgFromFile.StoreInterval.Duration
 	}
 

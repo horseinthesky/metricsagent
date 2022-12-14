@@ -27,7 +27,7 @@ import (
 type Server struct {
 	*chi.Mux
 	config    Config
-	cryptoKey   *rsa.PrivateKey
+	CryptoKey *rsa.PrivateKey
 	db        storage.Storage
 	backuper  *Backuper
 	workGroup sync.WaitGroup
@@ -67,7 +67,7 @@ func NewServer(cfg Config) (*Server, error) {
 // Assembles middleware and handlers.
 func (s *Server) setupRouter() {
 	s.Use(handleGzip)
-	s.Use(logRequest)
+	// s.Use(logRequest)
 	s.Use(s.handleDecrypt)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
@@ -80,7 +80,6 @@ func (s *Server) setupRouter() {
 			r.Post("/{metricName}/{value}", s.handleSaveTextMetric())
 		})
 		r.Post("/", s.handleSaveJSONMetric())
-		r.Post("/*", s.handleNotFound)
 	})
 	s.Post("/updates/", s.handleSaveJSONMetrics())
 
@@ -90,7 +89,6 @@ func (s *Server) setupRouter() {
 			r.Get("/{metricName}", s.handleLoadTextMetric())
 		})
 		r.Post("/", s.handleLoadJSONMetric())
-		r.Get("/*", s.handleNotFound)
 	})
 
 	s.Get("/", s.handleDashboard())

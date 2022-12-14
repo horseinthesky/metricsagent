@@ -1,14 +1,25 @@
 package server
 
 import (
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestParseConfig(t *testing.T) {
-	config, err := ParseConfig()
+	curDir, err := os.Getwd()
 	assert.NoError(t, err)
-	assert.Equal(t, config.Address, defaultListenOn)
-	assert.Equal(t, config.StoreFile, defaultStoreFile)
+
+	testAddress := "localhost:8082"
+	os.Setenv("CONFIG", curDir + "/testdata/server_config.json")
+	os.Setenv("ADDRESS",testAddress)
+
+	config, err := ParseConfig()
+
+	assert.NoError(t, err)
+	assert.Equal(t, testAddress, config.Address)
+	assert.Equal(t, 100 * time.Second, config.StoreInterval)
+	assert.Equal(t, "", config.DatabaseDSN)
 }

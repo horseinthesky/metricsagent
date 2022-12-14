@@ -87,8 +87,8 @@ func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, st
 			return 0, "", fmt.Errorf("failed to marshal metrics: %w", err)
 	}
 
-	if a.cryptoKey != nil {
-		payloadBytes, err = encryptWithPublicKey(payloadBytes, a.cryptoKey)
+	if a.CryptoKey != nil {
+		payloadBytes, err = EncryptWithPublicKey(payloadBytes, a.CryptoKey)
 		if err != nil {
 			return 0, "", fmt.Errorf("failed to encrypt payload: %w", err)
 		}

@@ -320,3 +320,12 @@ func TestJSONHandlers(t *testing.T) {
 		})
 	}
 }
+
+func TestDashBoard(t *testing.T) {
+	ts := httptest.NewServer(testServer)
+	defer ts.Close()
+
+	code, body := testRequest(t, ts, http.MethodGet, "/", "")
+	require.Equal(t, http.StatusOK, code)
+	require.Empty(t, body)
+}

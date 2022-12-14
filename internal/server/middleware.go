@@ -27,7 +27,7 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 // handleDecrypt provides RSA decryption.
 func (s *Server) handleDecrypt(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.cryptoKey == nil {
+		if s.CryptoKey == nil {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -41,7 +41,7 @@ func (s *Server) handleDecrypt(next http.Handler) http.Handler {
 		}
 		defer r.Body.Close()
 
-		decryptedBody, err := decryptWithPrivateKey(encryptedBody, s.cryptoKey)
+		decryptedBody, err := decryptWithPrivateKey(encryptedBody, s.CryptoKey)
 		if err != nil {
 			log.Println("failed to decrypt body")
 			w.WriteHeader(http.StatusBadRequest)

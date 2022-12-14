@@ -22,7 +22,7 @@ func TestCrypto(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	encryptedBytes, err := encryptWithPublicKey([]byte("plaintext"), testAgent.cryptoKey)
+	encryptedBytes, err := EncryptWithPublicKey([]byte("plaintext"), testAgent.CryptoKey)
 	require.NoError(t, err)
 	require.NotZero(t, encryptedBytes)
 }

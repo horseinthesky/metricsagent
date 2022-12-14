@@ -26,7 +26,7 @@ type Agent struct {
 	PollCounter  int64
 	pprofServer  *http.Server
 	key          string
-	cryptoKey    *rsa.PublicKey
+	CryptoKey    *rsa.PublicKey
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
@@ -51,7 +51,7 @@ func NewAgent(cfg Config) (*Agent, error) {
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		pprofServer:  &http.Server{Addr: cfg.Pprof},
 		key:          cfg.Key,
-		cryptoKey:    pubKey,
+		CryptoKey:    pubKey,
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", cfg.Address),
 		client: &http.Client{

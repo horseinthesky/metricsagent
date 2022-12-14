@@ -35,8 +35,8 @@ func parseCryptoPubKey(path string) (*rsa.PublicKey, error) {
 	return rsaKey, nil
 }
 
-// encryptWithPublicKey encrypts data with public key
-func encryptWithPublicKey(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
+// EncryptWithPublicKey encrypts data with public key
+func EncryptWithPublicKey(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
 	hash := sha256.New()
 
 	ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, pub, msg, nil)

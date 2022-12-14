@@ -18,11 +18,6 @@ import (
 // dashboardTemplate is a path to metrics dashboard html template.
 const dashboardTemplate = "internal/server/templates/dashboard.html"
 
-func (s *Server) handleNotFound(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotFound)
-	w.Write([]byte(http.StatusText(http.StatusNotFound)))
-}
-
 // handleDashboard handles metrics dashboard rendering.
 func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
