@@ -20,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -40,7 +41,7 @@ func NewServer(cfg Config) (*Server, error) {
 	if cfg.CryptoKey != "" {
 		var err error
 
-		privKey, err = parseCryptoPrivKey(cfg.CryptoKey)
+		privKey, err = crypto.ParsePrivKey(cfg.CryptoKey)
 		if err != nil {
 			return nil, err
 		}

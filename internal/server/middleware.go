@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -41,7 +42,7 @@ func (s *Server) handleDecrypt(next http.Handler) http.Handler {
 		}
 		defer r.Body.Close()
 
-		decryptedBody, err := decryptWithPrivateKey(encryptedBody, s.CryptoKey)
+		decryptedBody, err := crypto.DecryptWithPrivateKey(encryptedBody, s.CryptoKey)
 		if err != nil {
 			log.Println("failed to decrypt body")
 			w.WriteHeader(http.StatusBadRequest)

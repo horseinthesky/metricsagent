@@ -17,6 +17,8 @@ import (
 	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
 
 // Agent description.
@@ -40,7 +42,7 @@ func NewAgent(cfg Config) (*Agent, error) {
 	if cfg.CryptoKey != "" {
 		var err error
 
-		pubKey, err = parseCryptoPubKey(cfg.CryptoKey)
+		pubKey, err = crypto.ParsePubKey(cfg.CryptoKey)
 		if err != nil {
 			return nil, err
 		}

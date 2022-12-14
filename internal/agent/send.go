@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
 
 // Metrics is an object to marshal metrics to.
@@ -84,11 +86,11 @@ func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, st
 
 	payloadBytes, err := json.Marshal(metrics)
 	if err != nil {
-			return 0, "", fmt.Errorf("failed to marshal metrics: %w", err)
+		return 0, "", fmt.Errorf("failed to marshal metrics: %w", err)
 	}
 
 	if a.CryptoKey != nil {
-		payloadBytes, err = EncryptWithPublicKey(payloadBytes, a.CryptoKey)
+		payloadBytes, err = crypto.EncryptWithPublicKey(payloadBytes, a.CryptoKey)
 		if err != nil {
 			return 0, "", fmt.Errorf("failed to encrypt payload: %w", err)
 		}
