@@ -1,9 +1,7 @@
 package crypto
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -53,28 +51,4 @@ func ParsePrivKey(path string) (*rsa.PrivateKey, error) {
 	}
 
 	return priv, nil
-}
-
-// EncryptWithPublicKey encrypts data with public key.
-func EncryptWithPublicKey(msg []byte, pub *rsa.PublicKey) ([]byte, error) {
-	hash := sha256.New()
-
-	ciphertext, err := rsa.EncryptOAEP(hash, rand.Reader, pub, msg, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return ciphertext, nil
-}
-
-// DecryptWithPrivateKey decrypts data with private key.
-func DecryptWithPrivateKey(ciphertext []byte, priv *rsa.PrivateKey) ([]byte, error) {
-	hash := sha256.New()
-
-	decryptedBytes, err := rsa.DecryptOAEP(hash, rand.Reader, priv, ciphertext, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return decryptedBytes, nil
 }
