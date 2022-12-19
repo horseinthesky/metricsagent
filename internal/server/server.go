@@ -120,8 +120,25 @@ func (s *Server) Run(ctx context.Context) {
 		log.Fatalf("failed to init db: %s", err)
 	}
 
-	log.Printf("listening on %s", s.config.Address)
-	log.Fatalf("server crashed due to %s", http.ListenAndServe(s.config.Address, s))
+	srv := http.Server{
+		Addr:    s.config.Address,
+		Handler: s,
+	}
+
+	s.workGroup.Add(1)
+	go func() {
+		defer s.workGroup.Done()
+
+		log.Printf("listening on %s", s.config.Address)
+
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("server crashed: %s", err)
+		}
+		log.Printf("finished to serve HTTP requests")
+	}()
+
+	<-ctx.Done()
+	srv.Shutdown(ctx)
 }
 
 // Stop is a Server graceful shutdown method.
