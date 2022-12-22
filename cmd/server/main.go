@@ -24,7 +24,10 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to parse server config: %w", err))
 	}
 
-	metricsServer := server.NewServer(cfg)
+	metricsServer, err := server.NewServer(cfg)
+	if err != nil {
+		log.Fatal(fmt.Errorf("failed to create server: %w", err))
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go metricsServer.Run(ctx)

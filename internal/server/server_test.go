@@ -12,12 +12,27 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testServer = NewServer(Config{
-	Address:       defaultListenOn,
-	Restore:       false,
-	StoreInterval: 10 * time.Minute,
-	StoreFile:     "/tmp/test-metrics-db.json",
-})
+var (
+	testServer       *Server
+	testHashedServer *Server
+)
+
+func init() {
+	testServer, _ = NewServer(Config{
+		Address:       defaultListenOn,
+		Restore:       false,
+		StoreInterval: 10 * time.Minute,
+		StoreFile:     "/tmp/test-metrics-db.json",
+	})
+
+	testHashedServer, _ = NewServer(Config{
+		Address:       "localhost:8085",
+		Restore:       false,
+		StoreInterval: 10 * time.Minute,
+		StoreFile:     "/tmp/test-metrics-db.json",
+		Key:           "testkey",
+	})
+}
 
 func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload string) (int, string) {
 	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer([]byte(payload)))
@@ -315,4 +330,130 @@ func TestJSONHandlers(t *testing.T) {
 			require.Equal(t, tt.body, body)
 		})
 	}
+}
+
+func TestJSONHandlersHashed(t *testing.T) {
+	saveTests := []struct {
+		name     string
+		method   string
+		path     string
+		payload  string
+		expected int
+	}{
+		{
+			name:   "test save hashed counter JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestCounter",
+				"type": "counter",
+				"delta": 15,
+				"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+			}`,
+			expected: http.StatusOK,
+		},
+		{
+			name:   "test save hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+			}`,
+			expected: http.StatusOK,
+		},
+		{
+			name:   "test save invalid hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestInvalidHashedGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "invalidhash"
+			}`,
+			expected: http.StatusInternalServerError,
+		},
+		{
+			name:   "test save wrong hashed Gauge JSON",
+			method: http.MethodPost,
+			path:   "/update",
+			payload: `{
+				"id": "TestWrongHashedGauge",
+				"type": "gauge",
+				"value": 15,
+				"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+			}`,
+			expected: http.StatusBadRequest,
+		},
+		{
+			name:   "test save a pair of hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+				},
+				{
+					"id": "TestGauge",
+					"type": "gauge",
+					"value": 15,
+					"hash": "7300c53d565107966dd4486f13c76cdeda0e31d7f49a62494e5921f8a0faf417"
+				}
+			]`,
+			expected: http.StatusOK,
+		},
+		{
+			name:   "test save invalid hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestInvalidHashCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "invalidhash"
+				}
+			]`,
+			expected: http.StatusInternalServerError,
+		},
+		{
+			name:   "test save wrong hashed metrics",
+			method: http.MethodPost,
+			path:   "/updates/",
+			payload: `[
+				{
+					"id": "TestWrongHashedCounter",
+					"type": "counter",
+					"delta": 15,
+					"hash": "175b2a772fbf2ad97bb515e10f2c24bdaf75860e18f8999c6825be73acd3e6bc"
+				}
+			]`,
+			expected: http.StatusBadRequest,
+		},
+	}
+
+	ts := httptest.NewServer(testHashedServer)
+	defer ts.Close()
+
+	for _, tt := range saveTests {
+		t.Run(tt.name, func(t *testing.T) {
+			code, _ := testRequest(t, ts, tt.method, tt.path, tt.payload)
+			require.Equal(t, tt.expected, code)
+		})
+	}
+}
+
+func TestDashBoard(t *testing.T) {
+	ts := httptest.NewServer(testServer)
+	defer ts.Close()
+
+	code, body := testRequest(t, ts, http.MethodGet, "/", "")
+	require.Equal(t, http.StatusOK, code)
+	require.NotEmpty(t, body)
 }

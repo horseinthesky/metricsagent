@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -22,6 +23,37 @@ type gzipWriter struct {
 // Write writes compressed bytes to HTTP writer.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
+}
+
+// handleDecrypt provides RSA decryption.
+func (s *Server) handleDecrypt(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.CryptoKey == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		encryptedBody, err := io.ReadAll(r.Body)
+		if err != nil {
+			log.Println("failed to read body")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+		defer r.Body.Close()
+
+		decryptedBody, err := crypto.DecryptWithPrivateKey(encryptedBody, s.CryptoKey)
+		if err != nil {
+			log.Println("failed to decrypt body")
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(http.StatusText(http.StatusBadRequest)))
+			return
+		}
+
+		r.Body = io.NopCloser(bytes.NewBuffer(decryptedBody))
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleGzip provides gzip compression.
@@ -46,36 +78,35 @@ func handleGzip(next http.Handler) http.Handler {
 
 // logRequest logs some HTTP request data.
 // Stores:
-//  - method
-//  - client address
-//  - headers
-//  - URL path
-//  - body
-//  - headers
-func logRequest(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
-
-		bodyBytes, err := io.ReadAll(r.Body)
-		if err != nil {
-			log.Println("Body: failed to read")
-			r.Body.Close()
-			next.ServeHTTP(w, r)
-		}
-		defer r.Body.Close()
-
-		log.Print("Body:", string(bodyBytes))
-		log.Print("Headers:")
-		for header, values := range r.Header {
-			log.Print(header, values)
-
-		}
-
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-		next.ServeHTTP(w, r)
-	})
-}
+//   - method
+//   - client address
+//   - headers
+//   - URL path
+//   - body
+//   - headers
+// func logRequest(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		log.Printf("Got %s request from %s for %s", r.Method, r.RemoteAddr, r.URL.Path)
+//
+// 		bodyBytes, err := io.ReadAll(r.Body)
+// 		if err != nil {
+// 			log.Println("Body: failed to read")
+// 			next.ServeHTTP(w, r)
+// 		}
+// 		defer r.Body.Close()
+//
+// 		log.Print("Body:", string(bodyBytes))
+// 		log.Print("Headers:")
+// 		for header, values := range r.Header {
+// 			log.Print(header, values)
+//
+// 		}
+//
+// 		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+//
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
 // dropUnsupportedTextType provides early request drop
 // if metric type is not supported.
@@ -85,6 +116,7 @@ func dropUnsupportedTextType(next http.Handler) http.Handler {
 		metricType := chi.URLParam(r, "metricType")
 
 		if metricType != storage.Gauge.String() && metricType != storage.Counter.String() {
+			log.Printf("metric has unsupported type: %s", metricType)
 			w.WriteHeader(http.StatusNotImplemented)
 			w.Write([]byte(http.StatusText(http.StatusNotImplemented)))
 			return

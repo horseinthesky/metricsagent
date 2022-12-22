@@ -10,12 +10,15 @@ package agent
 
 import (
 	"context"
+	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
 	_ "net/http/pprof"
 	"sync"
 	"time"
+
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
 
 // Agent description.
@@ -25,6 +28,7 @@ type Agent struct {
 	PollCounter  int64
 	pprofServer  *http.Server
 	key          string
+	CryptoKey    *rsa.PublicKey
 	metrics      *sync.Map
 	upstream     string
 	client       *http.Client
@@ -33,18 +37,29 @@ type Agent struct {
 
 // NewAgent is an Agent constructor.
 // Sets things up.
-func NewAgent(cfg Config) *Agent {
+func NewAgent(cfg Config) (*Agent, error) {
+	var pubKey *rsa.PublicKey
+	if cfg.CryptoKey != "" {
+		var err error
+
+		pubKey, err = crypto.ParsePubKey(cfg.CryptoKey)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &Agent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		pprofServer:  &http.Server{Addr: cfg.Pprof},
 		key:          cfg.Key,
+		CryptoKey:    pubKey,
 		metrics:      &sync.Map{},
 		upstream:     fmt.Sprintf("http://%s", cfg.Address),
 		client: &http.Client{
 			Timeout: 1 * time.Second,
 		},
-	}
+	}, nil
 }
 
 // Run is an Agent starting point.

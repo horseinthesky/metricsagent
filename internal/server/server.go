@@ -1,16 +1,17 @@
 // Package server describes metrics server  internals.
 //
 // It consists of the following parts:
-//  - server.go - server struct and its lifecycle methods
-//  - config.go - server configuration options
-//  - backup.go - server periodic backup methods
-//  - secure.go - server metrics hash protection
-//  - middleware.go - server middleware
-//  - handlers.go - server HTTP router endpoints buciness logic
+//   - server.go - server struct and its lifecycle methods
+//   - config.go - server configuration options
+//   - backup.go - server periodic backup methods
+//   - secure.go - server metrics hash protection
+//   - middleware.go - server middleware
+//   - handlers.go - server HTTP router endpoints buciness logic
 package server
 
 import (
 	"context"
+	"crypto/rsa"
 	"log"
 	"net/http"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -26,6 +28,7 @@ import (
 type Server struct {
 	*chi.Mux
 	config    Config
+	CryptoKey *rsa.PrivateKey
 	db        storage.Storage
 	backuper  *Backuper
 	workGroup sync.WaitGroup
@@ -33,29 +36,40 @@ type Server struct {
 
 // Server constructor.
 // Sets things up.
-func NewServer(config Config) *Server {
+func NewServer(cfg Config) (*Server, error) {
+	var privKey *rsa.PrivateKey
+	if cfg.CryptoKey != "" {
+		var err error
+
+		privKey, err = crypto.ParsePrivKey(cfg.CryptoKey)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	r := chi.NewRouter()
 
 	var db storage.Storage
-	if config.DatabaseDSN != "" {
-		db = storage.NewDBStorage(config.DatabaseDSN)
+	if cfg.DatabaseDSN != "" {
+		db = storage.NewDBStorage(cfg.DatabaseDSN)
 	} else {
 		db = storage.NewMemoryStorage()
 	}
 
-	backuper := NewBackuper(config.StoreFile)
+	backuper := NewBackuper(cfg.StoreFile)
 
-	server := &Server{r, config, db, backuper, sync.WaitGroup{}}
+	server := &Server{r, cfg, privKey, db, backuper, sync.WaitGroup{}}
 	server.setupRouter()
 
-	return server
+	return server, nil
 }
 
 // setupRouter builds Server's HTTP router.
 // Assembles middleware and handlers.
 func (s *Server) setupRouter() {
-	s.Use(logRequest)
 	s.Use(handleGzip)
+	// s.Use(logRequest)
+	s.Use(s.handleDecrypt)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
 	s.Use(middleware.Logger)
@@ -67,7 +81,6 @@ func (s *Server) setupRouter() {
 			r.Post("/{metricName}/{value}", s.handleSaveTextMetric())
 		})
 		r.Post("/", s.handleSaveJSONMetric())
-		r.Post("/*", s.handleNotFound)
 	})
 	s.Post("/updates/", s.handleSaveJSONMetrics())
 
@@ -77,7 +90,6 @@ func (s *Server) setupRouter() {
 			r.Get("/{metricName}", s.handleLoadTextMetric())
 		})
 		r.Post("/", s.handleLoadJSONMetric())
-		r.Get("/*", s.handleNotFound)
 	})
 
 	s.Get("/", s.handleDashboard())
@@ -108,7 +120,25 @@ func (s *Server) Run(ctx context.Context) {
 		log.Fatalf("failed to init db: %s", err)
 	}
 
-	log.Fatalf("server crashed due to %s", http.ListenAndServe(s.config.Address, s))
+	srv := http.Server{
+		Addr:    s.config.Address,
+		Handler: s,
+	}
+
+	s.workGroup.Add(1)
+	go func() {
+		defer s.workGroup.Done()
+
+		log.Printf("listening on %s", s.config.Address)
+
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Fatalf("server crashed: %s", err)
+		}
+		log.Printf("finished to serve HTTP requests")
+	}()
+
+	<-ctx.Done()
+	srv.Shutdown(ctx)
 }
 
 // Stop is a Server graceful shutdown method.
@@ -144,8 +174,8 @@ func (s *Server) startPeriodicMetricsDump(ctx context.Context) {
 
 // saveMetric handles synchronous metric backup.
 // Only used by handleSaveJSONMetric handler when
-//  - in-memory storage is in use
-//  - no StoreInterval provided
+//   - in-memory storage is in use
+//   - no StoreInterval provided
 func (s *Server) saveMetric(metric storage.Metric) error {
 	err := s.db.Set(metric)
 
@@ -160,8 +190,8 @@ func (s *Server) saveMetric(metric storage.Metric) error {
 
 // saveMetricBulk handles synchronous bulk metric backup.
 // Only used by handleSaveJSONMetrics handler when
-//  - in-memory storage is in use
-//  - no StoreInterval provided
+//   - in-memory storage is in use
+//   - no StoreInterval provided
 func (s *Server) saveMetricsBulk(metrics []storage.Metric) error {
 	err := s.db.SetBulk(metrics)
 

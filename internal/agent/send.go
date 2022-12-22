@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
 
 // Metrics is an object to marshal metrics to.
@@ -80,11 +82,21 @@ func (a *Agent) prepareMetrics() []Metric {
 
 // sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.
 func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, string, error) {
-	payloadBuf := new(bytes.Buffer)
-	json.NewEncoder(payloadBuf).Encode(metrics)
-
 	endpoint := fmt.Sprintf("%s/updates/", a.upstream)
-	request, err := http.NewRequest(http.MethodPost, endpoint, payloadBuf)
+
+	payloadBytes, err := json.Marshal(metrics)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to marshal metrics: %w", err)
+	}
+
+	if a.CryptoKey != nil {
+		payloadBytes, err = crypto.EncryptWithPublicKey(payloadBytes, a.CryptoKey)
+		if err != nil {
+			return 0, "", fmt.Errorf("failed to encrypt payload: %w", err)
+		}
+	}
+
+	request, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return 0, "", fmt.Errorf("failed to build a request: %w", err)
 	}

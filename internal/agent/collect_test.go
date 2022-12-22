@@ -4,32 +4,36 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdateRuntimeMetrics(t *testing.T) {
-	agent := NewAgent(Config{
+	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 	})
+
+	require.NoError(t, err)
 
 	agent.updateRuntimeMetrics()
 
 	AllocMetric, loaded := agent.metrics.Load("Alloc")
-	assert.True(t, loaded)
-	assert.Equal(t, counter(1), agent.PollCounter)
-	assert.NotEqual(t, 0, AllocMetric)
+	require.True(t, loaded)
+	require.Equal(t, counter(1), agent.PollCounter)
+	require.NotEqual(t, 0, AllocMetric)
 }
 
 func TestUpdatePSUtilMetrics(t *testing.T) {
-	agent := NewAgent(Config{
+	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 	})
 
+	require.NoError(t, err)
+
 	agent.updatePSUtilMetrics()
 
 	TotalMemoryMetric, loaded := agent.metrics.Load("TotalMemory")
-	assert.True(t, loaded)
-	assert.Greater(t, TotalMemoryMetric, gauge(0))
+	require.True(t, loaded)
+	require.Greater(t, TotalMemoryMetric, gauge(0))
 }

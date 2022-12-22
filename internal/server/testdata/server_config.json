@@ -1,0 +1,6 @@
+{
+  "address": "localhost:8081",
+  "restore": false,
+  "store_interval": "100s",
+  "store_file": "/tmp/devops-metrics-config-db.json"
+}

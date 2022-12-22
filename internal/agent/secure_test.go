@@ -8,11 +8,13 @@ import (
 )
 
 func TestAddhash(t *testing.T) {
-	agent := NewAgent(Config{
+	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
 		ReportInterval: time.Duration(10 * time.Second),
 		Key: "testkey",
 	})
+
+	require.NoError(t, err)
 
 	testCounter := counter(15)
 

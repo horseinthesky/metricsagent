@@ -12,12 +12,14 @@ import (
 )
 
 func TestGeneratehash(t *testing.T) {
-	testServer := NewServer(Config{
+	testServer, err := NewServer(Config{
 		Restore:       false,
 		StoreInterval: 10 * time.Minute,
 		StoreFile:     "/tmp/test-metrics-db.json",
 		Key:           "testkey",
 	})
+
+	require.NoError(t, err)
 
 	testCounter := `{
 		"id": "TestCounter",
@@ -27,7 +29,7 @@ func TestGeneratehash(t *testing.T) {
 	}`
 
 	testCounterMetric := storage.Metric{}
-	err := json.Unmarshal([]byte(testCounter), &testCounterMetric)
+	err = json.Unmarshal([]byte(testCounter), &testCounterMetric)
 	require.NoError(t, err)
 
 	localHash := testServer.generateHash(testCounterMetric)
