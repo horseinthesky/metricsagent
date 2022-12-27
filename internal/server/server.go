@@ -70,7 +70,7 @@ func NewServer(cfg Config) (*Server, error) {
 func (s *Server) setupRouter() {
 	s.Use(s.trustedSubnet)
 	s.Use(handleGzip)
-	s.Use(logRequest)
+	// s.Use(logRequest)
 	s.Use(s.handleDecrypt)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)

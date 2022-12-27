@@ -97,9 +97,11 @@ func ParseConfig() (Config, error) {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
 	}
 
-	_, _, err = net.ParseCIDR(cfg.TrustedSubnet)
-	if err != nil {
-		return Config{}, err
+	if cfg.TrustedSubnet != "" {
+		_, _, err = net.ParseCIDR(cfg.TrustedSubnet)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 
 	return cfg, nil
