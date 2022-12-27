@@ -12,6 +12,7 @@ package server
 import (
 	"context"
 	"crypto/rsa"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -67,8 +68,9 @@ func NewServer(cfg Config) (*Server, error) {
 // setupRouter builds Server's HTTP router.
 // Assembles middleware and handlers.
 func (s *Server) setupRouter() {
+	s.Use(s.trustedSubnet)
 	s.Use(handleGzip)
-	// s.Use(logRequest)
+	s.Use(logRequest)
 	s.Use(s.handleDecrypt)
 	s.Use(middleware.RequestID)
 	s.Use(middleware.RealIP)
@@ -129,7 +131,12 @@ func (s *Server) Run(ctx context.Context) {
 	go func() {
 		defer s.workGroup.Done()
 
-		log.Printf("listening on %s", s.config.Address)
+		runMsg := fmt.Sprintf("listening on %s", s.config.Address)
+		if s.config.TrustedSubnet != "" {
+			addon := fmt.Sprintf(", trusted subnet: %s", s.config.TrustedSubnet)
+			runMsg += addon
+		}
+		log.Println(runMsg)
 
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("server crashed: %s", err)

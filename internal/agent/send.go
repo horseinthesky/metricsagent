@@ -7,10 +7,21 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
+
+// getLocalAddress is a helper func to get real src IP address.
+func getLocalAddress() string {
+	conn, _ := net.Dial("udp", "8.8.8.8:80")
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
+}
 
 // Metrics is an object to marshal metrics to.
 type Metric struct {
@@ -100,8 +111,8 @@ func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, st
 	if err != nil {
 		return 0, "", fmt.Errorf("failed to build a request: %w", err)
 	}
-	request.Header.Add("Content-Type", "application/json")
-	request = request.WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Add("X-Real-IP", getLocalAddress())
 
 	response, err := a.client.Do(request)
 	if err != nil {

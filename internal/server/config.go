@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net"
 	"os"
 	"time"
 
@@ -50,8 +51,9 @@ func (d *Duration) UnmarshalJSON(b []byte) error {
 type ConfigFile struct {
 	Address       string   `json:"address"`
 	Restore       bool     `json:"restore"`
+	TrustedSubnet string   `json:"trusted_subnet"`
 	StoreInterval Duration `json:"store_interval"`
-	StoreFile     string   `josn:"store_file"`
+	StoreFile     string   `json:"store_file"`
 	CryptoKey     string   `json:"crypto_key"`
 	DatabaseDSN   string   `json:"database_dsn"`
 }
@@ -61,6 +63,7 @@ type Config struct {
 	ConfigPath    string        `env:"CONFIG"`
 	Address       string        `env:"ADDRESS"`
 	Restore       bool          `env:"RESTORE"`
+	TrustedSubnet string        `env:"TRUSTED_SUBNET"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
 	StoreFile     string        `env:"STORE_FILE"`
 	Key           string        `env:"KEY"`
@@ -77,6 +80,7 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.ConfigPath, "c", "", "Config file path")
 	flag.StringVar(&cfg.Address, "a", defaultListenOn, "Socket to listen on")
 	flag.BoolVar(&cfg.Restore, "r", defaultRestoreFlag, "If should restore metrics on startup")
+	flag.StringVar(&cfg.TrustedSubnet, "t", "", "Trusted subnet of IPs to accept requests from")
 	flag.DurationVar(&cfg.StoreInterval, "i", defaultStoreInterval, "backup interval (seconds)")
 	flag.StringVar(&cfg.StoreFile, "f", defaultStoreFile, "Metrics backup file path")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
@@ -91,6 +95,11 @@ func ParseConfig() (Config, error) {
 	err := loadConfigFile(&cfg)
 	if err != nil {
 		return Config{}, fmt.Errorf("failed to load config file: %w", err)
+	}
+
+	_, _, err = net.ParseCIDR(cfg.TrustedSubnet)
+	if err != nil {
+		return Config{}, err
 	}
 
 	return cfg, nil
@@ -118,6 +127,10 @@ func loadConfigFile(cfg *Config) error {
 
 	if cfg.Restore && !cfgFromFile.Restore {
 		cfg.Restore = cfgFromFile.Restore
+	}
+
+	if cfg.TrustedSubnet == "" && cfgFromFile.TrustedSubnet != "" {
+		cfg.TrustedSubnet = cfgFromFile.TrustedSubnet
 	}
 
 	if cfg.StoreInterval == defaultStoreInterval && cfgFromFile.StoreInterval.Duration != 0 {
