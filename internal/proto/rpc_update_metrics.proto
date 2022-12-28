@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package metricagent;
+
+import "metric.proto";
+
+option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
+
+message UpdateMetricsRequest {
+  repeated Metric metrics = 1;
+}
+
+message UpdateMetricsResponce {
+  string error = 1;
+}
