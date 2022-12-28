@@ -23,15 +23,6 @@ func getLocalAddress() string {
 	return localAddr.IP.String()
 }
 
-// Metrics is an object to marshal metrics to.
-type Metric struct {
-	ID    string `json:"id"`              // metric name
-	MType string `json:"type"`            // metric type, gauge/counter
-	Delta *int64 `json:"delta,omitempty"` // metric value if it has a type of counter
-	Value *gauge `json:"value,omitempty"` // metric value if it has a type of gauge
-	Hash  string `json:"hash,omitempty"`  // hash value
-}
-
 // sendMetricsJSONBulk sends all metrics as one big JSON.
 func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 	for {

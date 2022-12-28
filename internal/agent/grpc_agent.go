@@ -3,12 +3,14 @@ package agent
 import (
 	"context"
 	"crypto/rsa"
-	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/horseinthesky/metricsagent/internal/crypto"
+	"github.com/horseinthesky/metricsagent/internal/pb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // GPRCAgent description.
@@ -19,7 +21,7 @@ type GRPCAgent struct {
 	key          string
 	CryptoKey    *rsa.PublicKey
 	metrics      *sync.Map
-	upstream     string
+	conn         *grpc.ClientConn
 	workGroup    sync.WaitGroup
 }
 
@@ -36,13 +38,18 @@ func NewGRPCAgent(cfg Config) (*GRPCAgent, error) {
 		}
 	}
 
+	conn, err := grpc.Dial(cfg.Address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &GRPCAgent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		key:          cfg.Key,
 		CryptoKey:    pubKey,
 		metrics:      &sync.Map{},
-		upstream:     fmt.Sprintf("http://%s", cfg.Address),
+		conn:         conn,
 	}, nil
 }
 
@@ -58,10 +65,10 @@ func (a *GRPCAgent) Run(ctx context.Context) {
 		defer a.workGroup.Done()
 		a.collectPSUtilMetrics(ctx)
 	}()
-	// go func() {
-	// 	defer a.workGroup.Done()
-	// 	a.sendMetricsJSONBulk(ctx)
-	// }()
+	go func() {
+		defer a.workGroup.Done()
+		a.sendMetrics(ctx)
+	}()
 
 	<-ctx.Done()
 	log.Println("shutting down...")
@@ -101,9 +108,45 @@ func (a *GRPCAgent) collectRuntimeMetrics(ctx context.Context) {
 	}
 }
 
+// sendMetricsJSONBulk sends all metrics as one big JSON.
+func (a *GRPCAgent) sendMetrics(ctx context.Context) {
+	client := pb.NewMetricsAgentClient(a.conn)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("sending metrics cancelled")
+			return
+		case <-a.ReportTicker.C:
+			metrics := prepareMetrics(a.metrics, a.PollCounter, a.key)
+
+			pbMetics := []*pb.Metric{}
+			for _, m := range metrics {
+				pbMetics = append(pbMetics, MetricToPB(m))
+			}
+
+			res, err := client.UpdateMetrics(ctx, &pb.UpdateMetricsRequest{
+				Metrics: pbMetics,
+			})
+			if err != nil {
+				log.Printf("failed to send metrics: %s", err)
+				continue
+			}
+			if res.Error != "" {
+					log.Printf("server rejected metrics: %s", res.Error)
+					continue
+			}
+
+			log.Println("successfully updated metrics")
+		}
+	}
+}
+
 // Stop is an Agent graceful shutdown method.
 // Ensures everything is stopped as expected.
 func (a *GRPCAgent) Stop() {
+	a.conn.Close()
+
 	a.workGroup.Wait()
 	log.Println("successfully shut down")
 }
