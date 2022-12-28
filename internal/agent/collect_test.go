@@ -1,39 +1,26 @@
 package agent
 
 import (
+	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
+var storage = &sync.Map{}
+
 func TestUpdateRuntimeMetrics(t *testing.T) {
-	agent, err := NewAgent(Config{
-		PollInterval:   time.Duration(2 * time.Second),
-		ReportInterval: time.Duration(10 * time.Second),
-	})
+	updateRuntimeMetrics(storage)
 
-	require.NoError(t, err)
-
-	agent.updateRuntimeMetrics()
-
-	AllocMetric, loaded := agent.metrics.Load("Alloc")
+	AllocMetric, loaded := storage.Load("Alloc")
 	require.True(t, loaded)
-	require.Equal(t, counter(1), agent.PollCounter)
 	require.NotEqual(t, 0, AllocMetric)
 }
 
 func TestUpdatePSUtilMetrics(t *testing.T) {
-	agent, err := NewAgent(Config{
-		PollInterval:   time.Duration(2 * time.Second),
-		ReportInterval: time.Duration(10 * time.Second),
-	})
+	updatePSUtilMetrics(storage)
 
-	require.NoError(t, err)
-
-	agent.updatePSUtilMetrics()
-
-	TotalMemoryMetric, loaded := agent.metrics.Load("TotalMemory")
+	TotalMemoryMetric, loaded := storage.Load("TotalMemory")
 	require.True(t, loaded)
 	require.Greater(t, TotalMemoryMetric, gauge(0))
 }

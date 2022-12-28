@@ -35,7 +35,7 @@ func TestPrepareMetrics(t *testing.T) {
 	metrics := agent.prepareMetrics()
 	require.Equal(t, len(metrics), 1)
 
-	agent.updateRuntimeMetrics()
+	updateRuntimeMetrics(agent.metrics)
 	metrics = agent.prepareMetrics()
 	require.Greater(t, len(metrics), 1)
 }
