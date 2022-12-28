@@ -56,21 +56,21 @@ func NewGRPCServer(cfg Config) (*GRPCServer, error) {
 }
 
 func (s *GRPCServer) Run(ctx context.Context) {
-	if s.config.DatabaseDSN == "" {
-		// Restore metrics from backup
-		// if s.config.Restore {
-		// 	s.restore()
-		// }
-
-		// Backup metrics periodically
-		// if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
-		// 	s.workGroup.Add(1)
-		// 	go func() {
-		// 		defer s.workGroup.Done()
-		// 		s.startPeriodicMetricsDump(ctx)
-		// 	}()
-		// }
-	}
+	// if s.config.DatabaseDSN == "" {
+	// 	// Restore metrics from backup
+	// 	if s.config.Restore {
+	// 		s.restore()
+	// 	}
+	//
+	// 	// Backup metrics periodically
+	// 	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
+	// 		s.workGroup.Add(1)
+	// 		go func() {
+	// 			defer s.workGroup.Done()
+	// 			s.startPeriodicMetricsDump(ctx)
+	// 		}()
+	// 	}
+	// }
 
 	err := s.db.Init(ctx)
 	if err != nil {
