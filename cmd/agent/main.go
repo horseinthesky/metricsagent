@@ -24,13 +24,7 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to parse agent config: %w", err))
 	}
 
-	agent, err := agent.NewAgent(cfg)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create agent: %w", err))
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
-	go agent.Run(ctx)
 
 	// Log build info
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
@@ -39,9 +33,29 @@ func main() {
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	sig := <-term
-	log.Printf("signal received: %v; terminating...\n", sig)
+	if cfg.GRPC {
+		grpcAgent, err := agent.NewGRPCAgent(cfg)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to create agent: %w", err))
+		}
+		go grpcAgent.Run(ctx)
 
-	cancel()
-	agent.Stop()
+		sig := <-term
+		log.Printf("signal received: %v; terminating...\n", sig)
+
+		cancel()
+		grpcAgent.Stop()
+	} else {
+		agent, err := agent.NewAgent(cfg)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to create agent: %w", err))
+		}
+		go agent.Run(ctx)
+
+		sig := <-term
+		log.Printf("signal received: %v; terminating...\n", sig)
+
+		cancel()
+		agent.Stop()
+	}
 }

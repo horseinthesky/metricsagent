@@ -25,7 +25,7 @@ type GRPCAgent struct {
 
 // NewAgent is an Agent constructor.
 // Sets things up.
-func NewGRPCAgent(cfg Config) (*Agent, error) {
+func NewGRPCAgent(cfg Config) (*GRPCAgent, error) {
 	var pubKey *rsa.PublicKey
 	if cfg.CryptoKey != "" {
 		var err error
@@ -36,7 +36,7 @@ func NewGRPCAgent(cfg Config) (*Agent, error) {
 		}
 	}
 
-	return &Agent{
+	return &GRPCAgent{
 		PollTicker:   time.NewTicker(cfg.PollInterval),
 		ReportTicker: time.NewTicker(cfg.ReportInterval),
 		key:          cfg.Key,

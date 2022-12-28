@@ -40,7 +40,7 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 			log.Println("sending metrics cancelled")
 			return
 		case <-a.ReportTicker.C:
-			metrics := a.prepareMetrics()
+			metrics := prepareMetrics(a.metrics, a.PollCounter, a.key)
 
 			code, body, err := a.sendPostJSONBulk(ctx, metrics)
 			if err != nil {
@@ -51,44 +51,6 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 			log.Printf("Code: %v: %s", code, body)
 		}
 	}
-}
-
-// prepareMetrics() converts metrics data to Metric objects.
-func (a *Agent) prepareMetrics() []Metric {
-	metrics := []Metric{}
-
-	a.metrics.Range(func(metricName, value interface{}) bool {
-		m, _ := metricName.(string)
-		v, _ := value.(gauge)
-
-		metric := Metric{
-			ID:    m,
-			MType: "gauge",
-			Value: &v,
-		}
-
-		if a.key != "" {
-			a.addHash(&metric)
-		}
-
-		metrics = append(metrics, metric)
-
-		return true
-	})
-
-	metric := Metric{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &a.PollCounter,
-	}
-
-	if a.key != "" {
-		a.addHash(&metric)
-	}
-
-	metrics = append(metrics, metric)
-
-	return metrics
 }
 
 // sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.

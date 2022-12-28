@@ -23,23 +23,6 @@ func NewTestClient(fn roundTripFunc) *http.Client {
 	}
 }
 
-func TestPrepareMetrics(t *testing.T) {
-	agent, err := NewAgent(Config{
-		PollInterval:   time.Duration(2 * time.Second),
-		ReportInterval: time.Duration(10 * time.Second),
-		Key: "testkey",
-	})
-
-	require.NoError(t, err)
-
-	metrics := agent.prepareMetrics()
-	require.Equal(t, len(metrics), 1)
-
-	updateRuntimeMetrics(agent.metrics)
-	metrics = agent.prepareMetrics()
-	require.Greater(t, len(metrics), 1)
-}
-
 func TestSendMetricsJSONBulk(t *testing.T) {
 	agent, err := NewAgent(Config{
 		PollInterval:   time.Duration(2 * time.Second),
