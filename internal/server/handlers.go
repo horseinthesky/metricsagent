@@ -147,7 +147,7 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 			}
 
 			if s.config.Key != "" {
-				localHash := s.generateHash(metric)
+				localHash := generateHash(metric, s.config.Key)
 				remoteHash, err := hex.DecodeString(metric.Hash)
 				if err != nil {
 					http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
@@ -192,7 +192,7 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 		}
 
 		if s.config.Key != "" {
-			localHash := s.generateHash(metric)
+			localHash := generateHash(metric, s.config.Key)
 			remoteHash, err := hex.DecodeString(metric.Hash)
 
 			if err != nil {
@@ -244,7 +244,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 		}
 
 		if s.config.Key != "" {
-			metric.Hash = hex.EncodeToString(s.generateHash(metric))
+			metric.Hash = hex.EncodeToString(generateHash(metric, s.config.Key))
 		}
 
 		res, err := json.Marshal(metric)

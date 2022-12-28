@@ -69,6 +69,7 @@ type Config struct {
 	Key           string        `env:"KEY"`
 	CryptoKey     string        `env:"CRYPTO_KEY"`
 	DatabaseDSN   string        `env:"DATABASE_DSN"`
+	GRPC          bool
 }
 
 // ParseConfig parses the configuration options.
@@ -86,6 +87,7 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto private key path")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
+	flag.BoolVar(&cfg.GRPC, "g", false, "Replace HTTP with gRPC")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

@@ -131,7 +131,7 @@ func (s *Server) Run(ctx context.Context) {
 	go func() {
 		defer s.workGroup.Done()
 
-		runMsg := fmt.Sprintf("listening on %s", s.config.Address)
+		runMsg := fmt.Sprintf("Running HTTP server, listening on %s", s.config.Address)
 		if s.config.TrustedSubnet != "" {
 			addon := fmt.Sprintf(", trusted subnet: %s", s.config.TrustedSubnet)
 			runMsg += addon
@@ -141,6 +141,7 @@ func (s *Server) Run(ctx context.Context) {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Fatalf("server crashed: %s", err)
 		}
+
 		log.Printf("finished to serve HTTP requests")
 	}()
 

@@ -24,13 +24,7 @@ func main() {
 		log.Fatal(fmt.Errorf("failed to parse server config: %w", err))
 	}
 
-	metricsServer, err := server.NewServer(cfg)
-	if err != nil {
-		log.Fatal(fmt.Errorf("failed to create server: %w", err))
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
-	go metricsServer.Run(ctx)
 
 	// Log build info
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n", buildVersion, buildDate, buildCommit)
@@ -39,9 +33,31 @@ func main() {
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
-	sig := <-term
-	log.Printf("signal received: %v; terminating...\n", sig)
+	if cfg.GRPC {
+		gRPCMetricsServer, err := server.NewGRPCServer(cfg)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to create server: %w", err))
+		}
 
-	cancel()
-	metricsServer.Stop()
+		go gRPCMetricsServer.Run(ctx)
+
+		sig := <-term
+		log.Printf("signal received: %v; terminating...\n", sig)
+
+		cancel()
+		gRPCMetricsServer.Stop()
+	} else {
+		httpMetricsServer, err := server.NewServer(cfg)
+		if err != nil {
+			log.Fatal(fmt.Errorf("failed to create server: %w", err))
+		}
+
+		go httpMetricsServer.Run(ctx)
+
+		sig := <-term
+		log.Printf("signal received: %v; terminating...\n", sig)
+
+		cancel()
+		httpMetricsServer.Stop()
+	}
 }
