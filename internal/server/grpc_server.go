@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/horseinthesky/metricsagent/internal/crypto"
 	"github.com/horseinthesky/metricsagent/internal/pb"
@@ -56,21 +57,21 @@ func NewGRPCServer(cfg Config) (*GRPCServer, error) {
 }
 
 func (s *GRPCServer) Run(ctx context.Context) {
-	// if s.config.DatabaseDSN == "" {
-	// 	// Restore metrics from backup
-	// 	if s.config.Restore {
-	// 		s.restore()
-	// 	}
-	//
-	// 	// Backup metrics periodically
-	// 	if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
-	// 		s.workGroup.Add(1)
-	// 		go func() {
-	// 			defer s.workGroup.Done()
-	// 			s.startPeriodicMetricsDump(ctx)
-	// 		}()
-	// 	}
-	// }
+	if s.config.DatabaseDSN == "" {
+		// Restore metrics from backup
+		if s.config.Restore {
+			s.restore()
+		}
+
+		// Backup metrics periodically
+		if s.config.StoreFile != "" && s.config.StoreInterval > time.Duration(0)*time.Second {
+			s.workGroup.Add(1)
+			go func() {
+				defer s.workGroup.Done()
+				s.startPeriodicMetricsDump(ctx)
+			}()
+		}
+	}
 
 	err := s.db.Init(ctx)
 	if err != nil {
@@ -82,7 +83,7 @@ func (s *GRPCServer) Run(ctx context.Context) {
 		log.Fatal(err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(s.protectInterceptor))
 	pb.RegisterMetricsAgentServer(grpcServer, s)
 	reflection.Register(grpcServer)
 
@@ -116,6 +117,25 @@ func (s *GRPCServer) Stop() {
 
 	s.workGroup.Wait()
 	log.Println("successfully shut down")
+}
+
+// startPeriodicMetricsDump handles Server periodic metrics backup to file.
+// Only used with memory DB to provide persistent metrics storage
+// between Server restart.
+func (s *GRPCServer) startPeriodicMetricsDump(ctx context.Context) {
+	log.Println("pediodic metrics backup started")
+
+	ticker := time.NewTicker(s.config.StoreInterval)
+
+	for {
+		select {
+		case <-ticker.C:
+			s.dump()
+		case <-ctx.Done():
+			log.Println("metrics backup canceled")
+			return
+		}
+	}
 }
 
 // saveMetric handles synchronous metric backup.
