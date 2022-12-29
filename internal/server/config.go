@@ -13,10 +13,11 @@ import (
 
 // Server default cofig options.
 const (
-	defaultListenOn      = "localhost:8080"
-	defaultRestoreFlag   = true
-	defaultStoreInterval = 300 * time.Second
-	defaultStoreFile     = "/tmp/devops-metrics-db.json"
+	defaultListenOn       = "localhost:8080"
+	defaultRestoreFlag    = true
+	defaultStoreInterval  = 300 * time.Second
+	defaultStoreFile      = "/tmp/devops-metrics-db.json"
+	defaultDatabaseDriver = "pgx"
 )
 
 // Duration is a custom type to help unmarshal time.Duration
@@ -60,16 +61,17 @@ type ConfigFile struct {
 
 // Server Agent Config description.
 type Config struct {
-	ConfigPath    string        `env:"CONFIG"`
-	Address       string        `env:"ADDRESS"`
-	Restore       bool          `env:"RESTORE"`
-	TrustedSubnet string        `env:"TRUSTED_SUBNET"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Key           string        `env:"KEY"`
-	CryptoKey     string        `env:"CRYPTO_KEY"`
-	DatabaseDSN   string        `env:"DATABASE_DSN"`
-	GRPC          bool
+	ConfigPath     string        `env:"CONFIG"`
+	Address        string        `env:"ADDRESS"`
+	Restore        bool          `env:"RESTORE"`
+	TrustedSubnet  string        `env:"TRUSTED_SUBNET"`
+	StoreInterval  time.Duration `env:"STORE_INTERVAL"`
+	StoreFile      string        `env:"STORE_FILE"`
+	Key            string        `env:"KEY"`
+	CryptoKey      string        `env:"CRYPTO_KEY"`
+	DatabaseDSN    string        `env:"DATABASE_DSN"`
+	DatabaseDriver string        `env:"DATABASE_DRIVER"`
+	GRPC           bool
 }
 
 // ParseConfig parses the configuration options.
@@ -87,6 +89,7 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto private key path")
 	flag.StringVar(&cfg.DatabaseDSN, "d", "", "Database address")
+	flag.StringVar(&cfg.DatabaseDriver, "s", defaultDatabaseDriver, "Database driver (sqlite3/pgx)")
 	flag.BoolVar(&cfg.GRPC, "g", false, "Replace HTTP with gRPC")
 	flag.Parse()
 
@@ -104,6 +107,10 @@ func ParseConfig() (Config, error) {
 		if err != nil {
 			return Config{}, err
 		}
+	}
+
+	if cfg.DatabaseDriver != "pgx" && cfg.DatabaseDriver != "sqlite3" {
+		return Config{}, fmt.Errorf(`unsupported database driver: "%s", use "sqlite3" or "pgx"`, cfg.DatabaseDriver)
 	}
 
 	return cfg, nil

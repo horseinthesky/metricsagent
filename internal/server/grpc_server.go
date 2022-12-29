@@ -38,7 +38,7 @@ func NewGRPCServer(cfg Config) (*GRPCServer, error) {
 
 	var db storage.Storage
 	if cfg.DatabaseDSN != "" {
-		db = storage.NewDBStorage(cfg.DatabaseDSN)
+		db = storage.NewDBStorage(cfg.DatabaseDriver, cfg.DatabaseDSN)
 	} else {
 		db = storage.NewMemoryStorage()
 	}
