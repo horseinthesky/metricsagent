@@ -118,6 +118,22 @@ func (s *GRPCServer) Stop() {
 	log.Println("successfully shut down")
 }
 
+// saveMetric handles synchronous metric backup.
+// Only used by handleSaveJSONMetric handler when
+//   - in-memory storage is in use
+//   - no StoreInterval provided
+func (s *GRPCServer) saveMetric(metric storage.Metric) error {
+	err := s.db.Set(metric)
+
+	// if s.config.DatabaseDSN == "" {
+	// 	if s.config.StoreFile != "" && s.config.StoreInterval == time.Duration(0) {
+	// 		s.dump()
+	// 	}
+	// }
+
+	return err
+}
+
 // saveMetricBulk handles synchronous bulk metric backup.
 // Only used by handleSaveJSONMetrics handler when
 //   - in-memory storage is in use

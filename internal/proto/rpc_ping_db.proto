@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package metricagent;
+
+option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
+
+message PingDBRequest {
+}
+
+message PingDBResponse {
+}

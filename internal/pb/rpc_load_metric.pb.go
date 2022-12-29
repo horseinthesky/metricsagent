@@ -67,7 +67,7 @@ func (x *LoadMetricRequest) GetMetric() *MetricInfo {
 	return nil
 }
 
-type LoadMetricResponce struct {
+type LoadMetricResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
@@ -76,8 +76,8 @@ type LoadMetricResponce struct {
 	Error  string  `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 }
 
-func (x *LoadMetricResponce) Reset() {
-	*x = LoadMetricResponce{}
+func (x *LoadMetricResponse) Reset() {
+	*x = LoadMetricResponse{}
 	if protoimpl.UnsafeEnabled {
 		mi := &file_rpc_load_metric_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -85,13 +85,13 @@ func (x *LoadMetricResponce) Reset() {
 	}
 }
 
-func (x *LoadMetricResponce) String() string {
+func (x *LoadMetricResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LoadMetricResponce) ProtoMessage() {}
+func (*LoadMetricResponse) ProtoMessage() {}
 
-func (x *LoadMetricResponce) ProtoReflect() protoreflect.Message {
+func (x *LoadMetricResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_rpc_load_metric_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -103,19 +103,19 @@ func (x *LoadMetricResponce) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LoadMetricResponce.ProtoReflect.Descriptor instead.
-func (*LoadMetricResponce) Descriptor() ([]byte, []int) {
+// Deprecated: Use LoadMetricResponse.ProtoReflect.Descriptor instead.
+func (*LoadMetricResponse) Descriptor() ([]byte, []int) {
 	return file_rpc_load_metric_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *LoadMetricResponce) GetMetric() *Metric {
+func (x *LoadMetricResponse) GetMetric() *Metric {
 	if x != nil {
 		return x.Metric
 	}
 	return nil
 }
 
-func (x *LoadMetricResponce) GetError() string {
+func (x *LoadMetricResponse) GetError() string {
 	if x != nil {
 		return x.Error
 	}
@@ -133,7 +133,7 @@ var file_rpc_load_metric_proto_rawDesc = []byte{
 	0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63,
 	0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x49, 0x6e, 0x66, 0x6f,
 	0x52, 0x06, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x22, 0x57, 0x0a, 0x12, 0x4c, 0x6f, 0x61, 0x64,
-	0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x63, 0x65, 0x12, 0x2b,
+	0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x2b,
 	0x0a, 0x06, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13,
 	0x2e, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x4d, 0x65, 0x74,
 	0x72, 0x69, 0x63, 0x52, 0x06, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x12, 0x14, 0x0a, 0x05, 0x65,
@@ -159,13 +159,13 @@ func file_rpc_load_metric_proto_rawDescGZIP() []byte {
 var file_rpc_load_metric_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_rpc_load_metric_proto_goTypes = []interface{}{
 	(*LoadMetricRequest)(nil),  // 0: metricagent.LoadMetricRequest
-	(*LoadMetricResponce)(nil), // 1: metricagent.LoadMetricResponce
+	(*LoadMetricResponse)(nil), // 1: metricagent.LoadMetricResponse
 	(*MetricInfo)(nil),         // 2: metricagent.MetricInfo
 	(*Metric)(nil),             // 3: metricagent.Metric
 }
 var file_rpc_load_metric_proto_depIdxs = []int32{
 	2, // 0: metricagent.LoadMetricRequest.metric:type_name -> metricagent.MetricInfo
-	3, // 1: metricagent.LoadMetricResponce.metric:type_name -> metricagent.Metric
+	3, // 1: metricagent.LoadMetricResponse.metric:type_name -> metricagent.Metric
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -193,7 +193,7 @@ func file_rpc_load_metric_proto_init() {
 			}
 		}
 		file_rpc_load_metric_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoadMetricResponce); i {
+			switch v := v.(*LoadMetricResponse); i {
 			case 0:
 				return &v.state
 			case 1:

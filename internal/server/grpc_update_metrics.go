@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *GRPCServer) UpdateMetrics(ctx context.Context, req *pb.UpdateMetricsRequest) (*pb.UpdateMetricsResponce, error) {
+func (s *GRPCServer) UpdateMetrics(ctx context.Context, req *pb.UpdateMetricsRequest) (*pb.UpdateMetricsResponse, error) {
 	metrics := []storage.Metric{}
 
 	for _, pbMetric := range req.Metrics {
@@ -41,28 +41,5 @@ func (s *GRPCServer) UpdateMetrics(ctx context.Context, req *pb.UpdateMetricsReq
 		return nil, status.Error(codes.Internal, "failed to store metric")
 	}
 
-	return &pb.UpdateMetricsResponce{}, nil
-}
-func (s *GRPCServer) LoadMetric(ctx context.Context, req *pb.LoadMetricRequest) (*pb.LoadMetricResponce, error) {
-	metricRequest := storage.Metric{
-		ID:    req.Metric.Id,
-		MType: req.Metric.Mtype,
-	}
-
-	if storage.UnsupportedType(metricRequest.MType) {
-		return nil, status.Error(codes.Unimplemented, "unsupported metric type")
-	}
-
-	metric, err := s.db.Get(ctx, metricRequest.ID)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, "unknown metric id")
-	}
-
-	if s.config.Key != "" {
-		metric.Hash = hex.EncodeToString(generateHash(metric, s.config.Key))
-	}
-
-	return &pb.LoadMetricResponce{
-		Metric: MetricToPB(metric),
-	}, nil
+	return &pb.UpdateMetricsResponse{}, nil
 }

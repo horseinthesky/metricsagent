@@ -10,6 +10,6 @@ message UpdateMetricsRequest {
   repeated Metric metrics = 1;
 }
 
-message UpdateMetricsResponce {
+message UpdateMetricsResponse {
   string error = 1;
 }
