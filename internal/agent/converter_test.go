@@ -18,3 +18,29 @@ func TestPrepareMetrics(t *testing.T) {
 	metrics = prepareMetrics(storage, 2, testKey)
 	require.Greater(t, len(metrics), 1)
 }
+
+func TestMetricToPB(t *testing.T) {
+	counter := int64(10)
+
+	counterMmetric := Metric{
+		ID: "TestCounter",
+		MType: "counter",
+		Delta: &counter,
+	}
+
+	gauge := gauge(10.5)
+
+	gaugeMmetric := Metric{
+		ID: "TestGauge",
+		MType: "gauge",
+		Value: &gauge,
+	}
+
+	pbCounter := MetricToPB(counterMmetric)
+	require.Equal(t, counterMmetric.ID, pbCounter.Id)
+	require.Equal(t, *counterMmetric.Delta, pbCounter.Delta)
+
+	pbGauge := MetricToPB(gaugeMmetric)
+	require.Equal(t, gaugeMmetric.ID, pbGauge.Id)
+	require.Equal(t, *gaugeMmetric.Value, pbGauge.Value)
+}
