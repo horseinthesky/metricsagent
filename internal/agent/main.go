@@ -57,11 +57,11 @@ func (a *GenericAgent) Collect(ctx context.Context) {
 	}()
 	go func() {
 		defer a.workGroup.Done()
-		collectRuntimeMetrics(ctx, a.PollTicker, a.metrics, &a.PollCounter)
+		a.collectRuntimeMetrics(ctx)
 	}()
 	go func() {
 		defer a.workGroup.Done()
-		collectPSUtilMetrics(ctx, a.PollTicker, a.metrics)
+		a.collectPSUtilMetrics(ctx)
 	}()
 
 	<-ctx.Done()

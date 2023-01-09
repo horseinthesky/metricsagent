@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"runtime"
 	"sync"
-	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
@@ -21,14 +20,14 @@ type (
 
 // collectPSUtilMetrics runs updatePSUtilMetrics every config.PollInterval.
 // Also handles graceful shutdown.
-func collectPSUtilMetrics(ctx context.Context, pollTicker *time.Ticker, storage *sync.Map) {
+func (a *GenericAgent) collectPSUtilMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("psutil data collection cancelled")
 			return
-		case <-pollTicker.C:
-			updatePSUtilMetrics(storage)
+		case <-a.PollTicker.C:
+			updatePSUtilMetrics(a.metrics)
 
 			log.Println("successfully collected psutil metrics")
 		}
@@ -37,16 +36,16 @@ func collectPSUtilMetrics(ctx context.Context, pollTicker *time.Ticker, storage 
 
 // collectRuntimeMetrics runs updateRuntimeMetrics every config.PollInterval.
 // Also handles graceful shutdown.
-func collectRuntimeMetrics(ctx context.Context, pollTicker *time.Ticker, storage *sync.Map, counter *int64 ) {
+func (a *GenericAgent) collectRuntimeMetrics(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			log.Println("runtime data collection cancelled")
 			return
-		case <-pollTicker.C:
-			updateRuntimeMetrics(storage)
+		case <-a.PollTicker.C:
+			updateRuntimeMetrics(a.metrics)
 
-			*counter++
+			a.PollCounter++
 
 			log.Println("successfully collected runtime metrics")
 		}
