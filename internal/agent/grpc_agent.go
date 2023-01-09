@@ -96,12 +96,3 @@ func (a *GRPCAgent) sendMetrics(ctx context.Context) {
 		}
 	}
 }
-
-// Stop is an Agent graceful shutdown method.
-// Ensures everything is stopped as expected.
-func (a *GRPCAgent) Stop() {
-	a.conn.Close()
-
-	a.workGroup.Wait()
-	log.Println("successfully shut down")
-}
