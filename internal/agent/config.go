@@ -63,7 +63,7 @@ type Config struct {
 	Pprof          string        `env:"PPROF"`
 	Key            string        `env:"KEY"`
 	CryptoKey      string        `env:"CRYPTO_KEY"`
-	GRPC          bool
+	GRPC           bool
 }
 
 // ParseConfig parses the configuration options.
