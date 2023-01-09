@@ -17,7 +17,7 @@ func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req), nil
 }
 
-func NewTestClient(fn roundTripFunc) *http.Client {
+func newTestClient(fn roundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: roundTripFunc(fn),
 	}
@@ -31,7 +31,7 @@ func TestSendMetricsJSONBulk(t *testing.T) {
 
 	require.NoError(t, err)
 
-	agent.client = NewTestClient(func(*http.Request) *http.Response {
+	agent.client = newTestClient(func(*http.Request) *http.Response {
 		return &http.Response{
 			StatusCode: http.StatusOK,
 			Body:       io.NopCloser(strings.NewReader(`{"test": "passed"}`)),
