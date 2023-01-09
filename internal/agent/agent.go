@@ -14,6 +14,9 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -41,19 +44,25 @@ func NewAgent(cfg Config) (Agent, error) {
 
 // Run is an Agent starting point.
 // Runs an agent.
-func (a *Agent) Run(ctx context.Context) {
-	go a.Collect(ctx)
+func (a *Agent) Run() {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go a.Work(ctx)
 
 	a.workGroup.Add(1)
 	go func() {
 		defer a.workGroup.Done()
 		a.sendMetricsJSONBulk(ctx)
 	}()
-}
 
-// Stop is an Agent graceful shutdown method.
-// Ensures everything is stopped as expected.
-func (a *Agent) Stop() {
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	sig := <-term
+	log.Printf("signal received: %v; terminating...\n", sig)
+
+	cancel()
+
 	a.workGroup.Wait()
 	log.Println("successfully shut down")
 }

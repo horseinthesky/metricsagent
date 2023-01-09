@@ -3,7 +3,6 @@ package agent
 import (
 	"context"
 	"crypto/rsa"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -49,7 +48,7 @@ func NewGenericAgent(cfg Config) (*GenericAgent, error) {
 
 // Run is an Agent starting point.
 // Runs an agent.
-func (a *GenericAgent) Collect(ctx context.Context) {
+func (a *GenericAgent) Work(ctx context.Context) {
 	a.workGroup.Add(3)
 	go func() {
 		defer a.workGroup.Done()
@@ -65,6 +64,5 @@ func (a *GenericAgent) Collect(ctx context.Context) {
 	}()
 
 	<-ctx.Done()
-	log.Println("shutting down...")
 	a.pprofServer.Shutdown(ctx)
 }

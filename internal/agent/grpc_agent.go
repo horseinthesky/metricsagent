@@ -3,6 +3,9 @@ package agent
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/horseinthesky/metricsagent/internal/pb"
 	"google.golang.org/grpc"
@@ -36,14 +39,28 @@ func NewGRPCAgent(cfg Config) (GRPCAgent, error) {
 
 // Run is an Agent starting point.
 // Runs an agent.
-func (a *GRPCAgent) Run(ctx context.Context) {
-	go a.Collect(ctx)
+func (a *GRPCAgent) Run() {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go a.Work(ctx)
 
 	a.workGroup.Add(1)
 	go func() {
 		defer a.workGroup.Done()
 		a.sendMetrics(ctx)
 	}()
+
+	term := make(chan os.Signal, 1)
+	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	sig := <-term
+	log.Printf("signal received: %v; terminating...\n", sig)
+
+	cancel()
+
+	a.conn.Close()
+	a.workGroup.Wait()
+	log.Println("successfully shut down")
 }
 
 // sendMetricsJSONBulk sends all metrics as one big JSON.
