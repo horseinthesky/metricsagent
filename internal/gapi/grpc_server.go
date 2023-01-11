@@ -6,10 +6,11 @@ import (
 	"log"
 	"net"
 
-	"github.com/horseinthesky/metricsagent/internal/pb"
-	"github.com/horseinthesky/metricsagent/internal/server"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+
+	"github.com/horseinthesky/metricsagent/internal/pb"
+	"github.com/horseinthesky/metricsagent/internal/server"
 )
 
 type GRPCServer struct {
