@@ -14,7 +14,7 @@ proto:
 	internal/proto/*.proto
 
 test:
-	go test ./internal/{agent,server,crypto}/... -coverprofile=coverage.out
+	go test ./internal/{agent,server,crypto,api,gapi}/... -coverprofile=coverage.out
 	@go tool cover -html=coverage.out
 
 .PHONY: init proto test

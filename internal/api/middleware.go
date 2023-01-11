@@ -37,6 +37,12 @@ func (s *Server) trustedSubnet(next http.Handler) http.Handler {
 
 		_, trustedNet, _ := net.ParseCIDR(s.Config.TrustedSubnet)
 		requestIP := r.Header.Get("X-Real-IP")
+		if requestIP == "" {
+			log.Println("source IP not found; must be set to X-Real-IP header")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(http.StatusText(http.StatusForbidden)))
+			return
+		}
 
 		if !trustedNet.Contains(net.ParseIP(requestIP)) {
 			log.Printf("request from %s is forbidden", requestIP)
