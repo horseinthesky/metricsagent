@@ -48,6 +48,11 @@ func NewGenericServer(cfg Config) (*GenericServer, error) {
 }
 
 func (s *GenericServer) Bootstrap(ctx context.Context) {
+	err := s.DB.Init(ctx)
+	if err != nil {
+		log.Fatalf("failed to init db: %s", err)
+	}
+
 	if s.Config.DatabaseDSN == "" {
 		// Restore metrics from backup
 		if s.Config.Restore {
@@ -62,11 +67,6 @@ func (s *GenericServer) Bootstrap(ctx context.Context) {
 				s.startPeriodicMetricsDump(ctx)
 			}()
 		}
-	}
-
-	err := s.DB.Init(ctx)
-	if err != nil {
-		log.Fatalf("failed to init db: %s", err)
 	}
 }
 

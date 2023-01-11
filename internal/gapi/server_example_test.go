@@ -1,4 +1,4 @@
-package server
+package gapi
 
 import (
 	"context"
@@ -7,24 +7,24 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/horseinthesky/metricsagent/internal/server"
 )
 
 func Example() {
-	// Start server
-	cfg, err := ParseConfig()
+	cfg, err := server.ParseConfig()
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to parse server config: %w", err))
 	}
 
-	server, err := NewServer(cfg)
+	httpServer, err := NewGRPCServer(cfg)
 	if err != nil {
 		log.Fatal(fmt.Errorf("failed to create server: %w", err))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	go server.Run(ctx)
+	go httpServer.Run(ctx)
 
-	// Handle graceful shutdown
 	term := make(chan os.Signal, 1)
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
@@ -32,5 +32,5 @@ func Example() {
 	log.Printf("signal received: %v; terminating...\n", sig)
 
 	cancel()
-	server.Stop()
+	httpServer.Stop()
 }

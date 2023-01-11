@@ -22,7 +22,7 @@ func TestGeneratehash(t *testing.T) {
 	err := json.Unmarshal([]byte(testCounter), &testCounterMetric)
 	require.NoError(t, err)
 
-	localHash := generateHash(testCounterMetric, "testkey")
+	localHash := GenerateHash(testCounterMetric, "testkey")
 	remoteHash, err := hex.DecodeString(testCounterMetric.Hash)
 	require.NoError(t, err)
 
@@ -39,7 +39,7 @@ func TestGeneratehash(t *testing.T) {
 	err = json.Unmarshal([]byte(testGauge), &testGaugeMeric)
 	require.NoError(t, err)
 
-	localHash = generateHash(testGaugeMeric, "testkey")
+	localHash = GenerateHash(testGaugeMeric, "testkey")
 	remoteHash, err = hex.DecodeString(testGaugeMeric.Hash)
 	require.NoError(t, err)
 

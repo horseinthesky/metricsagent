@@ -1,4 +1,4 @@
-package server
+package api
 
 import (
 	"bytes"
@@ -10,22 +10,23 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/horseinthesky/metricsagent/internal/server"
 )
 
 var (
-	testServer       *GenericServer
-	testHashedServer *GenericServer
+	testServer       *Server
+	testHashedServer *Server
 )
 
 func init() {
-	testServer, _ = NewServer(Config{
-		Address:       defaultListenOn,
+	testServer, _ = NewServer(server.Config{
 		Restore:       false,
 		StoreInterval: 10 * time.Minute,
 		StoreFile:     "/tmp/test-metrics-db.json",
 	})
 
-	testHashedServer, _ = NewServer(Config{
+	testHashedServer, _ = NewServer(server.Config{
 		Address:       "localhost:8085",
 		Restore:       false,
 		StoreInterval: 10 * time.Minute,
@@ -50,13 +51,10 @@ func testRequest(t *testing.T, ts *httptest.Server, method, path string, payload
 }
 
 func TestServerRun(t *testing.T) {
-	testServer.restore()
-
 	ctx, cancel := context.WithCancel(context.Background())
 	go testServer.Run(ctx)
 
 	time.Sleep(2 * time.Second)
-	testServer.dump()
 
 	cancel()
 	testServer.Stop()
