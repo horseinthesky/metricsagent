@@ -7,7 +7,7 @@
 //   - secure.go - server metrics hash protection
 //   - middleware.go - server middleware
 //   - handlers.go - server HTTP router endpoints buciness logic
-package server
+package api
 
 import (
 	"context"
@@ -56,20 +56,20 @@ func (s *Server) setupRouter() {
 	s.Use(middleware.Recoverer)
 
 	s.Route("/update", func(r chi.Router) {
-		s.Route("/{metricType}", func(r chi.Router) {
-			s.Use(dropUnsupportedTextType)
-			s.Post("/{metricName}/{value}", s.handleSaveTextMetric())
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(dropUnsupportedTextType)
+			r.Post("/{metricName}/{value}", s.handleSaveTextMetric())
 		})
-		s.Post("/", s.handleSaveJSONMetric())
+		r.Post("/", s.handleSaveJSONMetric())
 	})
 	s.Post("/updates/", s.handleSaveJSONMetrics())
 
 	s.Route("/value", func(r chi.Router) {
-		s.Route("/{metricType}", func(r chi.Router) {
-			s.Use(dropUnsupportedTextType)
-			s.Get("/{metricName}", s.handleLoadTextMetric())
+		r.Route("/{metricType}", func(r chi.Router) {
+			r.Use(dropUnsupportedTextType)
+			r.Get("/{metricName}", s.handleLoadTextMetric())
 		})
-		s.Post("/", s.handleLoadJSONMetric())
+		r.Post("/", s.handleLoadJSONMetric())
 	})
 
 	s.Get("/", s.handleDashboard())

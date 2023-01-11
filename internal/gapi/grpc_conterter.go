@@ -1,4 +1,4 @@
-package server
+package gapi
 
 import (
 	"github.com/horseinthesky/metricsagent/internal/pb"
