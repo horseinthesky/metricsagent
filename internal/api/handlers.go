@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/horseinthesky/metricsagent/internal/server"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
@@ -23,7 +24,7 @@ func (s *Server) handleDashboard() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		floatedMetrics := map[string]float64{}
 
-		allMetrics, err := s.db.GetAll(r.Context())
+		allMetrics, err := s.DB.GetAll(r.Context())
 		if err != nil {
 			log.Printf("failed to get stored metrics: %s", err)
 			return
@@ -90,7 +91,7 @@ func (s *Server) handleSaveTextMetric() http.HandlerFunc {
 			}
 		}
 
-		err := s.db.Set(metric)
+		err := s.DB.Set(metric)
 		if err != nil {
 			http.Error(w, "failed to save metric", http.StatusInternalServerError)
 			return
@@ -106,7 +107,7 @@ func (s *Server) handleLoadTextMetric() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricName := chi.URLParam(r, "metricName")
 
-		metric, err := s.db.Get(r.Context(), metricName)
+		metric, err := s.DB.Get(r.Context(), metricName)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(http.StatusText(http.StatusNotFound)))
@@ -146,8 +147,8 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 				return
 			}
 
-			if s.config.Key != "" {
-				localHash := generateHash(metric, s.config.Key)
+			if s.Config.Key != "" {
+				localHash := server.GenerateHash(metric, s.Config.Key)
 				remoteHash, err := hex.DecodeString(metric.Hash)
 				if err != nil {
 					http.Error(w, `{"error": "failed to decode hash"}`, http.StatusInternalServerError)
@@ -161,7 +162,7 @@ func (s *Server) handleSaveJSONMetrics() http.HandlerFunc {
 			}
 		}
 
-		err = s.saveMetricsBulk(metrics)
+		err = s.SaveMetricsBulk(metrics)
 		if err != nil {
 			log.Printf("failed to store metric: %s", err)
 			http.Error(w, `{"error": "failed to store metric"}`, http.StatusBadRequest)
@@ -191,8 +192,8 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		if s.config.Key != "" {
-			localHash := generateHash(metric, s.config.Key)
+		if s.Config.Key != "" {
+			localHash := server.GenerateHash(metric, s.Config.Key)
 			remoteHash, err := hex.DecodeString(metric.Hash)
 
 			if err != nil {
@@ -206,7 +207,7 @@ func (s *Server) handleSaveJSONMetric() http.HandlerFunc {
 			}
 		}
 
-		err = s.saveMetric(metric)
+		err = s.SaveMetric(metric)
 		if err != nil {
 			log.Printf("failed to store metric: %s", err)
 			http.Error(w, `{"error": "failed to store metric"}`, http.StatusBadRequest)
@@ -236,15 +237,15 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 			return
 		}
 
-		metric, err := s.db.Get(r.Context(), metricRequest.ID)
+		metric, err := s.DB.Get(r.Context(), metricRequest.ID)
 		if err != nil {
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{"result": "unknown metric id"}`))
 			return
 		}
 
-		if s.config.Key != "" {
-			metric.Hash = hex.EncodeToString(generateHash(metric, s.config.Key))
+		if s.Config.Key != "" {
+			metric.Hash = hex.EncodeToString(server.GenerateHash(metric, s.Config.Key))
 		}
 
 		res, err := json.Marshal(metric)
@@ -260,7 +261,7 @@ func (s *Server) handleLoadJSONMetric() http.HandlerFunc {
 // handlePingDB provides Server's DB healthcheck.
 func (s *Server) handlePingDB() http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := s.db.Check(r.Context()); err != nil {
+		if err := s.DB.Check(r.Context()); err != nil {
 			log.Printf("failed to ping DB: %s", err)
 			http.Error(w, "failed to ping DB", http.StatusInternalServerError)
 			return

@@ -30,12 +30,12 @@ func (w gzipWriter) Write(b []byte) (int, error) {
 // Drops a request and returns 403 if not true.
 func (s *Server) trustedSubnet(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.config.TrustedSubnet == "" {
+		if s.Config.TrustedSubnet == "" {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		_, trustedNet, _ := net.ParseCIDR(s.config.TrustedSubnet)
+		_, trustedNet, _ := net.ParseCIDR(s.Config.TrustedSubnet)
 		requestIP := r.Header.Get("X-Real-IP")
 
 		if !trustedNet.Contains(net.ParseIP(requestIP)) {
@@ -131,7 +131,7 @@ func handleGzip(next http.Handler) http.Handler {
 // 		next.ServeHTTP(w, r)
 // 	})
 // }
-//
+
 // // dropUnsupportedTextType provides early request drop
 // // if metric type is not supported.
 // // Only used with handlers which get metrics data from URL params.

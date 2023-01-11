@@ -10,7 +10,7 @@ import (
 
 // generateHash adds hash to metric.
 // Only used if hash key is provided.
-func generateHash(metric storage.Metric, hashKey string) []byte {
+func GenerateHash(metric storage.Metric, hashKey string) []byte {
 	hash := hmac.New(sha256.New, []byte(hashKey))
 
 	var data string

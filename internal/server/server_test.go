@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	testServer       *Server
-	testHashedServer *Server
+	testServer       *GenericServer
+	testHashedServer *GenericServer
 )
 
 func init() {

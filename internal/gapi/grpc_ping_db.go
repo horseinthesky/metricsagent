@@ -9,7 +9,7 @@ import (
 )
 
 func (s *GRPCServer) PingDB(ctx context.Context, req *pb.PingDBRequest) (*pb.PingDBResponse, error) {
-	if err := s.db.Check(ctx); err != nil {
+	if err := s.DB.Check(ctx); err != nil {
 		return nil, status.Error(codes.Internal, "failed to ping DB")
 	}
 

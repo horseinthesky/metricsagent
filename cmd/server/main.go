@@ -9,6 +9,8 @@ import (
 	"syscall"
 
 	"github.com/horseinthesky/metricsagent/internal/server"
+	"github.com/horseinthesky/metricsagent/internal/api"
+	"github.com/horseinthesky/metricsagent/internal/gapi"
 )
 
 var (
@@ -34,7 +36,7 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	if cfg.GRPC {
-		gRPCMetricsServer, err := server.NewGRPCServer(cfg)
+		gRPCMetricsServer, err := gapi.NewGRPCServer(cfg)
 		if err != nil {
 			log.Fatal(fmt.Errorf("failed to create server: %w", err))
 		}
@@ -47,7 +49,7 @@ func main() {
 		cancel()
 		gRPCMetricsServer.Stop()
 	} else {
-		httpMetricsServer, err := server.NewServer(cfg)
+		httpMetricsServer, err := api.NewServer(cfg)
 		if err != nil {
 			log.Fatal(fmt.Errorf("failed to create server: %w", err))
 		}

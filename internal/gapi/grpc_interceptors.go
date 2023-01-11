@@ -13,7 +13,7 @@ import (
 )
 
 func (s *GRPCServer) protectInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	if s.config.TrustedSubnet == "" {
+	if s.Config.TrustedSubnet == "" {
 		return handler(ctx, req)
 	}
 
@@ -22,7 +22,7 @@ func (s *GRPCServer) protectInterceptor(ctx context.Context, req interface{}, in
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	_, trustedNet, _ := net.ParseCIDR(s.config.TrustedSubnet)
+	_, trustedNet, _ := net.ParseCIDR(s.Config.TrustedSubnet)
 
 	if !trustedNet.Contains(requestIP) {
 		return nil, status.Errorf(codes.PermissionDenied, "request from %s is forbidden", requestIP.String())
