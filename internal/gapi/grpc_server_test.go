@@ -22,7 +22,7 @@ func runTestServer(ctx context.Context, hashKey string) (pb.MetricsAgentClient, 
 	buffer := 101024 * 1024
 	lis := bufconn.Listen(buffer)
 
-	testServer, err := NewGRPCServer(server.Config{Key: hashKey})
+	testServer, _ := NewGRPCServer(server.Config{Key: hashKey})
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterMetricsAgentServer(grpcServer, testServer)
