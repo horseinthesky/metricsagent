@@ -8,6 +8,7 @@ package pb
 
 import (
 	context "context"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -22,9 +23,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type MetricsAgentClient interface {
-	PingDB(ctx context.Context, in *PingDBRequest, opts ...grpc.CallOption) (*PingDBResponse, error)
-	UpdateMetric(ctx context.Context, in *UpdateMetricRequest, opts ...grpc.CallOption) (*UpdateMetricResponse, error)
-	UpdateMetrics(ctx context.Context, in *UpdateMetricsRequest, opts ...grpc.CallOption) (*UpdateMetricsResponse, error)
+	PingDB(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error)
+	UpdateMetric(ctx context.Context, in *UpdateMetricRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	UpdateMetrics(ctx context.Context, in *UpdateMetricsRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	LoadMetric(ctx context.Context, in *LoadMetricRequest, opts ...grpc.CallOption) (*LoadMetricResponse, error)
 }
 
@@ -36,8 +37,8 @@ func NewMetricsAgentClient(cc grpc.ClientConnInterface) MetricsAgentClient {
 	return &metricsAgentClient{cc}
 }
 
-func (c *metricsAgentClient) PingDB(ctx context.Context, in *PingDBRequest, opts ...grpc.CallOption) (*PingDBResponse, error) {
-	out := new(PingDBResponse)
+func (c *metricsAgentClient) PingDB(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/metricagent.MetricsAgent/PingDB", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -45,8 +46,8 @@ func (c *metricsAgentClient) PingDB(ctx context.Context, in *PingDBRequest, opts
 	return out, nil
 }
 
-func (c *metricsAgentClient) UpdateMetric(ctx context.Context, in *UpdateMetricRequest, opts ...grpc.CallOption) (*UpdateMetricResponse, error) {
-	out := new(UpdateMetricResponse)
+func (c *metricsAgentClient) UpdateMetric(ctx context.Context, in *UpdateMetricRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/metricagent.MetricsAgent/UpdateMetric", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -54,8 +55,8 @@ func (c *metricsAgentClient) UpdateMetric(ctx context.Context, in *UpdateMetricR
 	return out, nil
 }
 
-func (c *metricsAgentClient) UpdateMetrics(ctx context.Context, in *UpdateMetricsRequest, opts ...grpc.CallOption) (*UpdateMetricsResponse, error) {
-	out := new(UpdateMetricsResponse)
+func (c *metricsAgentClient) UpdateMetrics(ctx context.Context, in *UpdateMetricsRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
 	err := c.cc.Invoke(ctx, "/metricagent.MetricsAgent/UpdateMetrics", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -76,9 +77,9 @@ func (c *metricsAgentClient) LoadMetric(ctx context.Context, in *LoadMetricReque
 // All implementations must embed UnimplementedMetricsAgentServer
 // for forward compatibility
 type MetricsAgentServer interface {
-	PingDB(context.Context, *PingDBRequest) (*PingDBResponse, error)
-	UpdateMetric(context.Context, *UpdateMetricRequest) (*UpdateMetricResponse, error)
-	UpdateMetrics(context.Context, *UpdateMetricsRequest) (*UpdateMetricsResponse, error)
+	PingDB(context.Context, *empty.Empty) (*empty.Empty, error)
+	UpdateMetric(context.Context, *UpdateMetricRequest) (*empty.Empty, error)
+	UpdateMetrics(context.Context, *UpdateMetricsRequest) (*empty.Empty, error)
 	LoadMetric(context.Context, *LoadMetricRequest) (*LoadMetricResponse, error)
 	mustEmbedUnimplementedMetricsAgentServer()
 }
@@ -87,13 +88,13 @@ type MetricsAgentServer interface {
 type UnimplementedMetricsAgentServer struct {
 }
 
-func (UnimplementedMetricsAgentServer) PingDB(context.Context, *PingDBRequest) (*PingDBResponse, error) {
+func (UnimplementedMetricsAgentServer) PingDB(context.Context, *empty.Empty) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PingDB not implemented")
 }
-func (UnimplementedMetricsAgentServer) UpdateMetric(context.Context, *UpdateMetricRequest) (*UpdateMetricResponse, error) {
+func (UnimplementedMetricsAgentServer) UpdateMetric(context.Context, *UpdateMetricRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMetric not implemented")
 }
-func (UnimplementedMetricsAgentServer) UpdateMetrics(context.Context, *UpdateMetricsRequest) (*UpdateMetricsResponse, error) {
+func (UnimplementedMetricsAgentServer) UpdateMetrics(context.Context, *UpdateMetricsRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateMetrics not implemented")
 }
 func (UnimplementedMetricsAgentServer) LoadMetric(context.Context, *LoadMetricRequest) (*LoadMetricResponse, error) {
@@ -113,7 +114,7 @@ func RegisterMetricsAgentServer(s grpc.ServiceRegistrar, srv MetricsAgentServer)
 }
 
 func _MetricsAgent_PingDB_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PingDBRequest)
+	in := new(empty.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func _MetricsAgent_PingDB_Handler(srv interface{}, ctx context.Context, dec func
 		FullMethod: "/metricagent.MetricsAgent/PingDB",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MetricsAgentServer).PingDB(ctx, req.(*PingDBRequest))
+		return srv.(MetricsAgentServer).PingDB(ctx, req.(*empty.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }

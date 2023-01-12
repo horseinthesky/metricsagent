@@ -80,15 +80,11 @@ func (a *GRPCAgent) sendMetrics(ctx context.Context) {
 				pbMetics = append(pbMetics, MetricToPB(m))
 			}
 
-			res, err := client.UpdateMetrics(ctx, &pb.UpdateMetricsRequest{
+			_, err := client.UpdateMetrics(ctx, &pb.UpdateMetricsRequest{
 				Metrics: pbMetics,
 			})
 			if err != nil {
 				log.Printf("failed to send metrics: %s", err)
-				continue
-			}
-			if res.Error != "" {
-				log.Printf("server rejected metrics: %s", res.Error)
 				continue
 			}
 

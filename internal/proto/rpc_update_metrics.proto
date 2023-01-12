@@ -9,7 +9,3 @@ option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
 message UpdateMetricsRequest {
   repeated Metric metrics = 1;
 }
-
-message UpdateMetricsResponse {
-  string error = 1;
-}

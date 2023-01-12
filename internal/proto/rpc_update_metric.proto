@@ -9,7 +9,3 @@ option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
 message UpdateMetricRequest {
   Metric metric = 1;
 }
-
-message UpdateMetricResponse {
-  string error = 1;
-}

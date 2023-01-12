@@ -67,53 +67,6 @@ func (x *UpdateMetricRequest) GetMetric() *Metric {
 	return nil
 }
 
-type UpdateMetricResponse struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Error string `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
-}
-
-func (x *UpdateMetricResponse) Reset() {
-	*x = UpdateMetricResponse{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_rpc_update_metric_proto_msgTypes[1]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *UpdateMetricResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UpdateMetricResponse) ProtoMessage() {}
-
-func (x *UpdateMetricResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_rpc_update_metric_proto_msgTypes[1]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UpdateMetricResponse.ProtoReflect.Descriptor instead.
-func (*UpdateMetricResponse) Descriptor() ([]byte, []int) {
-	return file_rpc_update_metric_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *UpdateMetricResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
 var File_rpc_update_metric_proto protoreflect.FileDescriptor
 
 var file_rpc_update_metric_proto_rawDesc = []byte{
@@ -124,14 +77,11 @@ var file_rpc_update_metric_proto_rawDesc = []byte{
 	0x74, 0x72, 0x69, 0x63, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x2b, 0x0a, 0x06, 0x6d,
 	0x65, 0x74, 0x72, 0x69, 0x63, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x6d, 0x65,
 	0x74, 0x72, 0x69, 0x63, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2e, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63,
-	0x52, 0x06, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x22, 0x2c, 0x0a, 0x14, 0x55, 0x70, 0x64, 0x61,
-	0x74, 0x65, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65,
-	0x12, 0x14, 0x0a, 0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x42, 0x33, 0x5a, 0x31, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62,
-	0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x6f, 0x72, 0x73, 0x65, 0x69, 0x6e, 0x74, 0x68, 0x65, 0x73,
-	0x6b, 0x79, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x61, 0x67, 0x65, 0x6e, 0x74, 0x2f,
-	0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x52, 0x06, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x42, 0x33, 0x5a, 0x31, 0x67, 0x69, 0x74, 0x68,
+	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x68, 0x6f, 0x72, 0x73, 0x65, 0x69, 0x6e, 0x74, 0x68,
+	0x65, 0x73, 0x6b, 0x79, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x61, 0x67, 0x65, 0x6e,
+	0x74, 0x2f, 0x69, 0x6e, 0x74, 0x65, 0x72, 0x6e, 0x61, 0x6c, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -146,14 +96,13 @@ func file_rpc_update_metric_proto_rawDescGZIP() []byte {
 	return file_rpc_update_metric_proto_rawDescData
 }
 
-var file_rpc_update_metric_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_rpc_update_metric_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_rpc_update_metric_proto_goTypes = []interface{}{
-	(*UpdateMetricRequest)(nil),  // 0: metricagent.UpdateMetricRequest
-	(*UpdateMetricResponse)(nil), // 1: metricagent.UpdateMetricResponse
-	(*Metric)(nil),               // 2: metricagent.Metric
+	(*UpdateMetricRequest)(nil), // 0: metricagent.UpdateMetricRequest
+	(*Metric)(nil),              // 1: metricagent.Metric
 }
 var file_rpc_update_metric_proto_depIdxs = []int32{
-	2, // 0: metricagent.UpdateMetricRequest.metric:type_name -> metricagent.Metric
+	1, // 0: metricagent.UpdateMetricRequest.metric:type_name -> metricagent.Metric
 	1, // [1:1] is the sub-list for method output_type
 	1, // [1:1] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -180,18 +129,6 @@ func file_rpc_update_metric_proto_init() {
 				return nil
 			}
 		}
-		file_rpc_update_metric_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*UpdateMetricResponse); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -199,7 +136,7 @@ func file_rpc_update_metric_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_rpc_update_metric_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   1,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

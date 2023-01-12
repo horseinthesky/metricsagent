@@ -5,14 +5,16 @@ import (
 	"crypto/hmac"
 	"encoding/hex"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+
 	"github.com/horseinthesky/metricsagent/internal/pb"
 	"github.com/horseinthesky/metricsagent/internal/server"
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-func (s *GRPCServer) UpdateMetric(ctx context.Context, req *pb.UpdateMetricRequest) (*pb.UpdateMetricResponse, error) {
+func (s *GRPCServer) UpdateMetric(ctx context.Context, req *pb.UpdateMetricRequest) (*emptypb.Empty, error) {
 
 	metric := MetricFromPB(req.Metric)
 	if storage.UnsupportedType(metric.MType) {
@@ -37,5 +39,5 @@ func (s *GRPCServer) UpdateMetric(ctx context.Context, req *pb.UpdateMetricReque
 		return nil, status.Error(codes.Internal, "failed to store metric")
 	}
 
-	return &pb.UpdateMetricResponse{}, nil
+	return &emptypb.Empty{}, nil
 }
