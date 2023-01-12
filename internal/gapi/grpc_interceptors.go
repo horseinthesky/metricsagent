@@ -35,7 +35,7 @@ func (s *GRPCServer) protectInterceptor(ctx context.Context, req interface{}, in
 func getClientIP(ctx context.Context) (net.IP, error) {
 	addrPort, ok := peer.FromContext(ctx)
 	if !ok {
-		return nil, fmt.Errorf("couldn't parse client IP address")
+		return nil, fmt.Errorf("no peer address info found")
 	}
 
 	ip := strings.Split(addrPort.Addr.String(), ":")[0]
