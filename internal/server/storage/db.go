@@ -6,20 +6,25 @@ import (
 	"log"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type DB struct {
-	db *sql.DB
+	db     *sql.DB
+	driver string
 }
 
-func NewDBStorage(databaseDSN string) *DB {
-	db, err := sql.Open("pgx", databaseDSN)
+func NewDBStorage(databaseDriver, databaseDSN string) *DB {
+	db, err := sql.Open(databaseDriver, databaseDSN)
 	if err != nil {
 		log.Printf("failed to prepare DB: %s", err)
 		return nil
 	}
 
-	return &DB{db: db}
+	return &DB{
+		db: db,
+		driver: databaseDriver,
+	}
 }
 
 func (d *DB) Init(ctx context.Context) error {
@@ -36,7 +41,13 @@ func (d *DB) Init(ctx context.Context) error {
 		return err
 	}
 
-	log.Println("postgresql database initialized")
+	initMsg := "database initialized: "
+	driverSuffix := d.driver
+	if d.driver == "pgx" {
+		driverSuffix = "postgres"
+	}
+
+	log.Println(initMsg + driverSuffix)
 
 	return nil
 }

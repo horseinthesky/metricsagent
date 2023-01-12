@@ -7,18 +7,20 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/horseinthesky/metricsagent/internal/crypto"
 )
 
-// Metrics is an object to marshal metrics to.
-type Metric struct {
-	ID    string `json:"id"`              // metric name
-	MType string `json:"type"`            // metric type, gauge/counter
-	Delta *int64 `json:"delta,omitempty"` // metric value if it has a type of counter
-	Value *gauge `json:"value,omitempty"` // metric value if it has a type of gauge
-	Hash  string `json:"hash,omitempty"`  // hash value
+// getLocalAddress is a helper func to get real src IP address.
+func getLocalAddress() string {
+	conn, _ := net.Dial("udp", "8.8.8.8:80")
+	defer conn.Close()
+
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+
+	return localAddr.IP.String()
 }
 
 // sendMetricsJSONBulk sends all metrics as one big JSON.
@@ -29,7 +31,7 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 			log.Println("sending metrics cancelled")
 			return
 		case <-a.ReportTicker.C:
-			metrics := a.prepareMetrics()
+			metrics := prepareMetrics(a.metrics, a.PollCounter, a.key)
 
 			code, body, err := a.sendPostJSONBulk(ctx, metrics)
 			if err != nil {
@@ -40,44 +42,6 @@ func (a *Agent) sendMetricsJSONBulk(ctx context.Context) {
 			log.Printf("Code: %v: %s", code, body)
 		}
 	}
-}
-
-// prepareMetrics() converts metrics data to Metric objects.
-func (a *Agent) prepareMetrics() []Metric {
-	metrics := []Metric{}
-
-	a.metrics.Range(func(metricName, value interface{}) bool {
-		m, _ := metricName.(string)
-		v, _ := value.(gauge)
-
-		metric := Metric{
-			ID:    m,
-			MType: "gauge",
-			Value: &v,
-		}
-
-		if a.key != "" {
-			a.addHash(&metric)
-		}
-
-		metrics = append(metrics, metric)
-
-		return true
-	})
-
-	metric := Metric{
-		ID:    "PollCount",
-		MType: "counter",
-		Delta: &a.PollCounter,
-	}
-
-	if a.key != "" {
-		a.addHash(&metric)
-	}
-
-	metrics = append(metrics, metric)
-
-	return metrics
 }
 
 // sendPostJSONBulk serves as a HTTP helper for sendMetricsJSONBulk.
@@ -100,8 +64,8 @@ func (a *Agent) sendPostJSONBulk(ctx context.Context, metrics []Metric) (int, st
 	if err != nil {
 		return 0, "", fmt.Errorf("failed to build a request: %w", err)
 	}
-	request.Header.Add("Content-Type", "application/json")
-	request = request.WithContext(ctx)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Add("X-Real-IP", getLocalAddress())
 
 	response, err := a.client.Do(request)
 	if err != nil {

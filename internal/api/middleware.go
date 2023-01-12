@@ -1,10 +1,11 @@
-package server
+package api
 
 import (
 	"bytes"
 	"compress/gzip"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"strings"
 
@@ -23,6 +24,35 @@ type gzipWriter struct {
 // Write writes compressed bytes to HTTP writer.
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
+}
+
+// trustedSubnet checks if a request came from an IP of stusted subnet.
+// Drops a request and returns 403 if not true.
+func (s *Server) trustedSubnet(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.Config.TrustedSubnet == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		_, trustedNet, _ := net.ParseCIDR(s.Config.TrustedSubnet)
+		requestIP := r.Header.Get("X-Real-IP")
+		if requestIP == "" {
+			log.Println("source IP not found; must be set to X-Real-IP header")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(http.StatusText(http.StatusForbidden)))
+			return
+		}
+
+		if !trustedNet.Contains(net.ParseIP(requestIP)) {
+			log.Printf("request from %s is forbidden", requestIP)
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(http.StatusText(http.StatusForbidden)))
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 // handleDecrypt provides RSA decryption.
@@ -108,9 +138,9 @@ func handleGzip(next http.Handler) http.Handler {
 // 	})
 // }
 
-// dropUnsupportedTextType provides early request drop
-// if metric type is not supported.
-// Only used with handlers which get metrics data from URL params.
+// // dropUnsupportedTextType provides early request drop
+// // if metric type is not supported.
+// // Only used with handlers which get metrics data from URL params.
 func dropUnsupportedTextType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricType := chi.URLParam(r, "metricType")

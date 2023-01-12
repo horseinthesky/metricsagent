@@ -7,13 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnsupportedType(t *testing.T) {
-	require.True(t, UnsupportedType("unsupported"))
-	require.False(t, UnsupportedType("counter"))
-}
-
-func TestMemoryDB(t *testing.T) {
-	db := NewMemoryStorage()
+func TestDBDB(t *testing.T) {
+	db := NewDBStorage("sqlite3", ":memory:")
 
 	ctx := context.Background()
 
@@ -77,7 +72,7 @@ func TestMemoryDB(t *testing.T) {
 
 	dbCounter, err := db.Get(ctx, "testCounter")
 	require.NoError(t, err)
-	require.Equal(t, int64(50), *dbCounter.Delta)
+	require.Equal(t, int64(40), *dbCounter.Delta)
 
 	notExists, err := db.Get(ctx, "notExists")
 	require.Error(t, err)

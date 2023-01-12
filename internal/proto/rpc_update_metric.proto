@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package metricagent;
+
+import "metric.proto";
+
+option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
+
+message UpdateMetricRequest {
+  Metric metric = 1;
+}

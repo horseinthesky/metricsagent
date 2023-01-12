@@ -5,22 +5,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"testing"
-	"time"
 
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 	"github.com/stretchr/testify/require"
 )
 
 func TestGeneratehash(t *testing.T) {
-	testServer, err := NewServer(Config{
-		Restore:       false,
-		StoreInterval: 10 * time.Minute,
-		StoreFile:     "/tmp/test-metrics-db.json",
-		Key:           "testkey",
-	})
-
-	require.NoError(t, err)
-
 	testCounter := `{
 		"id": "TestCounter",
 		"type": "counter",
@@ -29,10 +19,10 @@ func TestGeneratehash(t *testing.T) {
 	}`
 
 	testCounterMetric := storage.Metric{}
-	err = json.Unmarshal([]byte(testCounter), &testCounterMetric)
+	err := json.Unmarshal([]byte(testCounter), &testCounterMetric)
 	require.NoError(t, err)
 
-	localHash := testServer.generateHash(testCounterMetric)
+	localHash := GenerateHash(testCounterMetric, "testkey")
 	remoteHash, err := hex.DecodeString(testCounterMetric.Hash)
 	require.NoError(t, err)
 
@@ -49,7 +39,7 @@ func TestGeneratehash(t *testing.T) {
 	err = json.Unmarshal([]byte(testGauge), &testGaugeMeric)
 	require.NoError(t, err)
 
-	localHash = testServer.generateHash(testGaugeMeric)
+	localHash = GenerateHash(testGaugeMeric, "testkey")
 	remoteHash, err = hex.DecodeString(testGaugeMeric.Hash)
 	require.NoError(t, err)
 

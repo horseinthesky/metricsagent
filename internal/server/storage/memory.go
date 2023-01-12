@@ -17,7 +17,7 @@ func NewMemoryStorage() *Memory {
 }
 
 func (m *Memory) Init(ctx context.Context) error {
-	log.Println("memory database initialized")
+	log.Println("database initialized: memory")
 
 	return nil
 }
@@ -38,14 +38,13 @@ func (m *Memory) Set(metric Metric) error {
 			return nil
 
 		}
+
 		m.db[metric.ID] = metric
-		return nil
 	case Gauge.String():
 		m.db[metric.ID] = metric
-		return nil
 	}
 
-	return fmt.Errorf("failed to save metric")
+	return nil
 }
 
 func (m *Memory) SetBulk(metrics []Metric) error {

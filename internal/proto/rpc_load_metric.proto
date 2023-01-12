@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package metricagent;
+
+import "metric.proto";
+
+option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
+
+message LoadMetricRequest {
+  MetricInfo metric = 1;
+}
+
+message LoadMetricResponse {
+  Metric metric = 1;
+}

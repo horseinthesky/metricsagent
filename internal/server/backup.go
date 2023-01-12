@@ -58,11 +58,11 @@ func (b Backuper) ReadMetrics() ([]storage.Metric, error) {
 // dump is a Server's method to save metrics from DB to filesystem.
 // Only used if in-memory DB is in use.
 // Uses Backuper to do his job.
-func (s *Server) dump() {
+func (s *GenericServer) dump() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	allMetrics, err := s.db.GetAll(ctx)
+	allMetrics, err := s.DB.GetAll(ctx)
 	if err != nil {
 		log.Printf("failed to get stored metrics: %s", err)
 		return
@@ -85,7 +85,7 @@ func (s *Server) dump() {
 // restore is a Server's metohd to restore metrics from filesystem to DB.
 // Only used if in-memory DB is in use.
 // Uses Backuper to do his job.
-func (s *Server) restore() {
+func (s *GenericServer) restore() {
 	metrics, err := s.backuper.ReadMetrics()
 	if err != nil {
 		log.Println(fmt.Errorf("failed to restore metrics from %s: %w", s.backuper.filename, err))
@@ -93,7 +93,7 @@ func (s *Server) restore() {
 	}
 
 	for _, metric := range metrics {
-		err := s.db.Set(metric)
+		err := s.DB.Set(metric)
 		if err != nil {
 			log.Println(fmt.Errorf("failed to restore metric %s: %w", metric.ID, err))
 		}

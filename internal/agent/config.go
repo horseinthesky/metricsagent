@@ -63,6 +63,7 @@ type Config struct {
 	Pprof          string        `env:"PPROF"`
 	Key            string        `env:"KEY"`
 	CryptoKey      string        `env:"CRYPTO_KEY"`
+	GRPC           bool
 }
 
 // ParseConfig parses the configuration options.
@@ -78,6 +79,7 @@ func ParseConfig() (Config, error) {
 	flag.StringVar(&cfg.Pprof, "P", defaultPprofAddress, "Pprof address")
 	flag.StringVar(&cfg.Key, "k", "", "Hash key")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "Crypto public key path")
+	flag.BoolVar(&cfg.GRPC, "g", false, "Replace HTTP with gRPC")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
