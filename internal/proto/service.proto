@@ -4,7 +4,7 @@ package metricagent;
 
 import "google/protobuf/empty.proto";
 
-import "rpc_update_metric.proto";
+import "metric.proto";
 import "rpc_update_metrics.proto";
 import "rpc_load_metric.proto";
 
@@ -12,7 +12,7 @@ option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
 
 service MetricsAgent {
   rpc PingDB(google.protobuf.Empty) returns (google.protobuf.Empty) {}
-  rpc UpdateMetric(UpdateMetricRequest) returns (google.protobuf.Empty) {}
+  rpc UpdateMetric(Metric) returns (google.protobuf.Empty) {}
   rpc UpdateMetrics(UpdateMetricsRequest) returns (google.protobuf.Empty) {}
-  rpc LoadMetric(LoadMetricRequest) returns (LoadMetricResponse) {}
+  rpc LoadMetric(LoadMetricRequest) returns (Metric) {}
 }

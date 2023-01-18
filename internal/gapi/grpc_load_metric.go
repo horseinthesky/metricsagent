@@ -11,10 +11,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *GRPCServer) LoadMetric(ctx context.Context, req *pb.LoadMetricRequest) (*pb.LoadMetricResponse, error) {
+func (s *GRPCServer) LoadMetric(ctx context.Context, req *pb.LoadMetricRequest) (*pb.Metric, error) {
 	metricRequest := storage.Metric{
-		ID:    req.Metric.Id,
-		MType: req.Metric.Mtype,
+		ID:    req.Id,
+		MType: req.Mtype,
 	}
 
 	if storage.UnsupportedType(metricRequest.MType) {
@@ -30,7 +30,5 @@ func (s *GRPCServer) LoadMetric(ctx context.Context, req *pb.LoadMetricRequest) 
 		metric.Hash = hex.EncodeToString(server.GenerateHash(metric, s.Config.Key))
 	}
 
-	return &pb.LoadMetricResponse{
-		Metric: MetricToPB(metric),
-	}, nil
+	return MetricToPB(metric), nil
 }
