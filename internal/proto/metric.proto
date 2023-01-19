@@ -4,11 +4,6 @@ package metricagent;
 
 option go_package = "github.com/horseinthesky/metricsagent/internal/pb";
 
-message MetricInfo {
-  string id = 1;
-  string mtype = 2;
-}
-
 message Metric {
   string id = 1;
   string mtype = 2;

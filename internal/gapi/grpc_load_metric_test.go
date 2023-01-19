@@ -13,7 +13,7 @@ import (
 var testsLoadMetric = []struct {
 	name   string
 	runner func(context.Context) (pb.MetricsAgentClient, func())
-	metric *pb.MetricInfo
+	metric *pb.LoadMetricRequest
 	error  error
 }{
 	{
@@ -21,7 +21,7 @@ var testsLoadMetric = []struct {
 		runner: func(ctx context.Context) (pb.MetricsAgentClient, func()) {
 			return runTestServer(ctx, "testkey")
 		},
-		metric: &pb.MetricInfo{
+		metric: &pb.LoadMetricRequest{
 			Id:    "wrongCounter",
 			Mtype: "unimplemented",
 		},
@@ -32,7 +32,7 @@ var testsLoadMetric = []struct {
 		runner: func(ctx context.Context) (pb.MetricsAgentClient, func()) {
 			return runTestServer(ctx, "testkey")
 		},
-		metric: &pb.MetricInfo{
+		metric: &pb.LoadMetricRequest{
 			Id:    "testCounter1",
 			Mtype: "counter",
 		},
@@ -48,7 +48,7 @@ func TestLoadMetrics(t *testing.T) {
 			client, closer := tt.runner(ctx)
 			defer closer()
 
-			_, err := client.LoadMetric(ctx, &pb.LoadMetricRequest{Metric: tt.metric})
+			_, err := client.LoadMetric(ctx, tt.metric)
 			if tt.error == nil {
 				require.NoError(t, err)
 				return

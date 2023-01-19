@@ -14,9 +14,9 @@ import (
 	"github.com/horseinthesky/metricsagent/internal/server/storage"
 )
 
-func (s *GRPCServer) UpdateMetric(ctx context.Context, req *pb.UpdateMetricRequest) (*emptypb.Empty, error) {
+func (s *GRPCServer) UpdateMetric(ctx context.Context, req *pb.Metric) (*emptypb.Empty, error) {
 
-	metric := MetricFromPB(req.Metric)
+	metric := MetricFromPB(req)
 	if storage.UnsupportedType(metric.MType) {
 		return nil, status.Error(codes.Unimplemented, "unsupported metric type")
 	}

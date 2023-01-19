@@ -94,7 +94,7 @@ func TestUpdateMetric(t *testing.T) {
 			defer closer()
 
 			tt.metric.Delta = &tt.value
-			payload := &pb.UpdateMetricRequest{Metric: MetricToPB(tt.metric)}
+			payload := MetricToPB(tt.metric)
 
 			_, err := client.UpdateMetric(ctx, payload)
 			if tt.error == nil {
