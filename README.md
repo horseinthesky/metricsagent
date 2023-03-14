@@ -1,24 +1,30 @@
-# go-musthave-devops-tpl
+# 📏 metricsagent
 
-Шаблон репозитория для практического трека «Go в DevOps».
+`metricsagent` is a main project of Advanced Go developer course from Yandex Praticum.
 
-# Начало работы
+## ✨ Features
 
-1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере.
-2. В корне репозитория выполните команду `go mod init <name>` (где `<name>` - адрес вашего репозитория на GitHub без префикса `https://`) для создания модуля.
+- 🚀 Client side sends runtime metrics to server side. Both HTTP and gRPC supported
+- 🔒 Metric values are encrypted with [GCM](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
+- 💪 Async execution for improved performance
 
-# Обновление шаблона
+## 📊 AutoTests
 
-Чтобы получать обновления автотестов и других частей шаблона, выполните следующую команду:
+Project autotests are available here:
+https://github.com/Yandex-Practicum/go-autotests/tree/main/cmd/gophermarttest
+
+### Updates
+
+To be able to get updates for the test suite run:
 
 ```
-git remote add -m main template https://github.com/yandex-praktikum/go-musthave-devops-tpl.git
+git remote add -m master template https://github.com/yandex-praktikum/go-musthave-diploma-tpl.git
 ```
 
-Для обновления кода автотестов выполните команду:
+To update the test suite source code run:
 
 ```
-git fetch template && git checkout template/main .github
+git fetch template && git checkout template/master .github
 ```
 
-Затем добавьте полученные изменения в свой репозиторий.
+Then add changes to your repo.
